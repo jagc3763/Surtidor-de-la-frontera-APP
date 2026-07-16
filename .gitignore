@@ -1,0 +1,21 @@
+# Archivos y carpetas de compilación y salida
+**/bin/
+**/obj/
+**/PublishOutput/
+
+# Archivos y configuraciones de usuario de Visual Studio
+.vs/
+*.user
+*.suo
+*.sln.docstates
+
+# Archivos comprimidos de copias de seguridad
+*.rar
+*.zip
+
+# Excluir ejecutables y librerías compiladas pesadas
+*.exe
+*.dll
+*.pdb
+
+# NOTA: No se excluyen archivos .db para permitir el control de versiones de surtidor.db

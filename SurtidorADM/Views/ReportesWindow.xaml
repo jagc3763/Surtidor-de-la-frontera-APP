@@ -1,0 +1,200 @@
+<Window x:Class="SurtidorADM.Views.ReportesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Surtidor de la Frontera - Reportes Personalizados a Excel" Height="780" Width="850"
+        WindowStartupLocation="CenterScreen" Background="#F4F6F9" FontFamily="Segoe UI">
+
+    <Window.Resources>
+        <!-- Estilo de Botón con CornerRadius 8 -->
+        <Style x:Key="SurtidorButtonStyle" TargetType="Button">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="8" Padding="10">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="13"/>
+        </Style>
+
+        <!-- Estilo de Título de Grupo -->
+        <Style x:Key="GroupTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#112A46"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid x:Name="RootGrid" Margin="30">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Cabecera -->
+        <Grid Grid.Row="0" Margin="0,0,0,20">
+            <StackPanel>
+                <TextBlock Text="Reportes Personalizados a Excel" FontSize="26" FontWeight="Bold" Foreground="#112A46"/>
+                <TextBlock Text="Configure e imprima el reporte consolidado seleccionando hojas y columnas a la medida" FontSize="14" Foreground="#7F8C8D" Margin="0,5,0,0"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Configuración de Fechas -->
+        <Border Grid.Row="1" Background="White" CornerRadius="12" BorderBrush="#E1E5EA" BorderThickness="1" Padding="15" Margin="0,0,0,20">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="15"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="30"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="15"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" Text="Desde:" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#294B73" FontSize="14"/>
+                <DatePicker Grid.Column="2" x:Name="dpDesde" Height="40" VerticalContentAlignment="Center" BorderBrush="#D1D9E2" FontSize="14" SelectedDateChanged="DpDate_SelectedDateChanged"/>
+
+                <TextBlock Grid.Column="4" Text="Hasta:" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#294B73" FontSize="14"/>
+                <DatePicker Grid.Column="6" x:Name="dpHasta" Height="40" VerticalContentAlignment="Center" BorderBrush="#D1D9E2" FontSize="14" SelectedDateChanged="DpDate_SelectedDateChanged"/>
+            </Grid>
+        </Border>
+
+        <!-- Configuración de Hojas y Columnas -->
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="0,0,0,20">
+            <StackPanel>
+
+                <!-- Vista Previa de Métricas del Período -->
+                <Border Background="White" CornerRadius="12" BorderBrush="#E1E5EA" BorderThickness="1" Padding="20" Margin="0,0,0,20">
+                    <StackPanel>
+                        <TextBlock Text="📊 VISTA PREVIA DE TOTALES EN EL PERÍODO" Style="{StaticResource GroupTitleStyle}"/>
+                        
+                        <Grid Margin="0,5,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="15"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="15"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="15"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Total Ventas -->
+                            <Border Grid.Column="0" Background="#112A46" CornerRadius="8" Padding="10">
+                                <StackPanel>
+                                    <TextBlock Text="Total Ventas" Foreground="#A0B2C6" FontSize="11" FontWeight="SemiBold"/>
+                                    <TextBlock x:Name="lblPreviewVentas" Text="0.000 $" Foreground="White" FontSize="15" FontWeight="Bold" Margin="0,3,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Monto Financiado -->
+                            <Border Grid.Column="2" Background="#1A3A5D" CornerRadius="8" Padding="10">
+                                <StackPanel>
+                                    <TextBlock Text="Monto Financiado" Foreground="#A0B2C6" FontSize="11" FontWeight="SemiBold"/>
+                                    <TextBlock x:Name="lblPreviewFinanciado" Text="0.000 $" Foreground="White" FontSize="15" FontWeight="Bold" Margin="0,3,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Monto en Banco -->
+                            <Border Grid.Column="4" Background="#16A085" CornerRadius="8" Padding="10">
+                                <StackPanel>
+                                    <TextBlock Text="Monto en Banco" Foreground="#A0B2C6" FontSize="11" FontWeight="SemiBold"/>
+                                    <TextBlock x:Name="lblPreviewBanco" Text="0.000 $" Foreground="White" FontSize="15" FontWeight="Bold" Margin="0,3,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Deuda Pendiente (Debe Cashea) -->
+                            <Border Grid.Column="6" Background="#C0392B" CornerRadius="8" Padding="10">
+                                <StackPanel>
+                                    <TextBlock Text="Debe Cashea" Foreground="#E8A7A1" FontSize="11" FontWeight="SemiBold"/>
+                                    <TextBlock x:Name="lblPreviewDebe" Text="0.000 $" Foreground="White" FontSize="15" FontWeight="Bold" Margin="0,3,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+                
+                <!-- Hojas a Incluir -->
+                <Border Background="White" CornerRadius="12" BorderBrush="#E1E5EA" BorderThickness="1" Padding="20" Margin="0,0,0,20">
+                    <StackPanel>
+                        <TextBlock Text="📋 HOJAS A INCLUIR EN EL DOCUMENTO" Style="{StaticResource GroupTitleStyle}"/>
+                        
+                        <CheckBox x:Name="chkResumenGral" Content="Hoja 1: Resumen General ('Reporte Mensual')" IsChecked="True" FontSize="13" Margin="0,5,0,8" Foreground="#2C3E50"/>
+                        <CheckBox x:Name="chkAjustes" Content="Hoja 2: Ajustes / Órdenes Canceladas ('Ajustes')" IsChecked="True" FontSize="13" Margin="0,0,0,8" Foreground="#2C3E50"/>
+                        <CheckBox x:Name="chkDetalleVentas" Content="Hoja 3: Detalle Completo de Ventas en el Período" IsChecked="True" Checked="ChkDetalleVentas_Changed" Unchecked="ChkDetalleVentas_Changed" FontSize="13" Margin="0,0,0,8" Foreground="#2C3E50"/>
+                        <CheckBox x:Name="chkDetalleBanco" Content="Hoja 4: Detalle Completo de Movimientos de Banco (Con Órdenes Relacionadas)" IsChecked="True" Checked="ChkDetalleBanco_Changed" Unchecked="ChkDetalleBanco_Changed" FontSize="13" Margin="0,0,0,8" Foreground="#2C3E50"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Columnas de Detalle de Ventas -->
+                <Border x:Name="borderColumnasVentas" Background="White" CornerRadius="12" BorderBrush="#E1E5EA" BorderThickness="1" Padding="20" Margin="0,0,0,20">
+                    <StackPanel>
+                        <TextBlock Text="🔍 COLUMNAS DE DETALLE DE VENTAS (HOJA 3)" Style="{StaticResource GroupTitleStyle}"/>
+                        
+                        <UniformGrid Columns="2" Rows="6">
+                            <CheckBox x:Name="colVentaOrden" Content="Número de Orden" IsChecked="True" FontSize="13" Margin="0,5,0,5" Foreground="#2C3E50"/>
+                            <CheckBox x:Name="colVentaFactura" Content="Número de Factura" IsChecked="True" FontSize="13" Margin="0,5,0,5" Foreground="#2C3E50"/>
+                            <CheckBox x:Name="colVentaFecha" Content="Fecha de Compra" IsChecked="True" FontSize="13" Margin="0,5,0,5" Foreground="#2C3E50"/>
+                            <CheckBox x:Name="colVentaTotal" Content="Venta Total ($)" IsChecked="True" FontSize="13" Margin="0,5,0,5" Foreground="#2C3E50"/>
+                            <CheckBox x:Name="colVentaFinanciado" Content="Monto Financiado ($)" IsChecked="True" FontSize="13" Margin="0,5,0,5" Foreground="#2C3E50"/>
+                            <CheckBox x:Name="colVentaBancoVes" Content="Monto en Banco (Bs.)" IsChecked="True" FontSize="13" Margin="0,5,0,5" Foreground="#2C3E50"/>
+                            <CheckBox x:Name="colVentaBancoUsd" Content="Monto en Banco ($)" IsChecked="True" FontSize="13" Margin="0,5,0,5" Foreground="#2C3E50"/>
+                            <CheckBox x:Name="colVentaDebe" Content="Monto Debe ($)" IsChecked="True" FontSize="13" Margin="0,5,0,5" Foreground="#2C3E50"/>
+                            <CheckBox x:Name="colVentaEsperado" Content="Esperado en Banco (Bs.)" IsChecked="True" FontSize="13" Margin="0,5,0,5" Foreground="#2C3E50"/>
+                            <CheckBox x:Name="colVentaCuotas" Content="Cuotas Pagadas" IsChecked="True" FontSize="13" Margin="0,5,0,5" Foreground="#2C3E50"/>
+                            <CheckBox x:Name="colVentaEstado" Content="Estado de Pago" IsChecked="True" FontSize="13" Margin="0,5,0,5" Foreground="#2C3E50"/>
+                            <CheckBox x:Name="colVentaFechasCuotas" Content="Fechas de Cuotas (1, 2, 3)" IsChecked="True" FontSize="13" Margin="0,5,0,5" Foreground="#2C3E50"/>
+                        </UniformGrid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Columnas de Detalle de Banco -->
+                <Border x:Name="borderColumnasBanco" Background="White" CornerRadius="12" BorderBrush="#E1E5EA" BorderThickness="1" Padding="20" Margin="0,0,0,20">
+                    <StackPanel>
+                        <TextBlock Text="🏦 COLUMNAS DE DETALLE DE BANCO (HOJA 4)" Style="{StaticResource GroupTitleStyle}"/>
+                        
+                        <UniformGrid Columns="2" Rows="4">
+                            <CheckBox x:Name="colBancoFecha" Content="Fecha de Movimiento" IsChecked="True" FontSize="13" Margin="0,5,0,5" Foreground="#2C3E50"/>
+                            <CheckBox x:Name="colBancoReferencia" Content="Referencia Bancaria" IsChecked="True" FontSize="13" Margin="0,5,0,5" Foreground="#2C3E50"/>
+                            <CheckBox x:Name="colBancoDescripcion" Content="Descripción" IsChecked="True" FontSize="13" Margin="0,5,0,5" Foreground="#2C3E50"/>
+                            <CheckBox x:Name="colBancoMonto" Content="Monto Abonado (Bs.)" IsChecked="True" FontSize="13" Margin="0,5,0,5" Foreground="#2C3E50"/>
+                            <CheckBox x:Name="colBancoOrden" Content="Orden Asociada" IsChecked="True" FontSize="13" Margin="0,5,0,5" Foreground="#2C3E50"/>
+                            <CheckBox x:Name="colBancoFactura" Content="Factura Asociada" IsChecked="True" FontSize="13" Margin="0,5,0,5" Foreground="#2C3E50"/>
+                            <CheckBox x:Name="colBancoCuota" Content="Cuota Pagada" IsChecked="True" FontSize="13" Margin="0,5,0,5" Foreground="#2C3E50"/>
+                            <CheckBox x:Name="colBancoFechaLiq" Content="Fecha Liquidación Cashea" IsChecked="True" FontSize="13" Margin="0,5,0,5" Foreground="#2C3E50"/>
+                        </UniformGrid>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Botones de Acción -->
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="15"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" VerticalAlignment="Center" Foreground="#7F8C8D" FontSize="12">
+                * El reporte se guardará en un archivo con formato compatible con Excel (.xlsx)
+            </TextBlock>
+            
+            <Button Grid.Column="2" Click="BtnExportar_Click" Width="200" Height="45" Background="#27AE60" Style="{StaticResource SurtidorButtonStyle}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="⚡ Exportar a Excel" Margin="5,0,0,0"/>
+                </StackPanel>
+            </Button>
+        </Grid>
+    </Grid>
+</Window>

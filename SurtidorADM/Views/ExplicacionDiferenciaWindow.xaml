@@ -1,0 +1,104 @@
+<Window x:Class="SurtidorADM.Views.ExplicacionDiferenciaWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Explicación de Diferencia" 
+        Height="440" Width="520"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#F3F4F6"
+        FontFamily="Segoe UI, Inter, Roboto">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <!-- Header with Concept -->
+            <RowDefinition Height="Auto"/>
+            <!-- Values Box -->
+            <RowDefinition Height="Auto"/>
+            <!-- Explanation Text -->
+            <RowDefinition Height="*"/>
+            <!-- Footer/Button -->
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 1. Header Bar -->
+        <Border Grid.Row="0" Background="#1E3A8A" Padding="20,15">
+            <StackPanel>
+                <TextBlock Text="📊 Análisis de Concepto Financiero" FontSize="11" FontWeight="Bold" Foreground="#93C5FD" Margin="0,0,0,2"/>
+                <TextBlock x:Name="TxtConcepto" Text="Nombre del Concepto" FontSize="18" FontWeight="Bold" Foreground="White"/>
+            </StackPanel>
+        </Border>
+
+        <!-- 2. Values Box -->
+        <Border Grid.Row="1" Background="White" BorderBrush="#E5E7EB" BorderThickness="0,0,0,1" Padding="20,12">
+            <UniformGrid Columns="3">
+                <!-- Cashea value -->
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="Reporte Cashea" FontSize="11.5" Foreground="#6B7280" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="TxtCashea" Text="0.00 $" FontSize="15" FontWeight="SemiBold" Foreground="#1F2937" Margin="0,3,0,0" HorizontalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- System value -->
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="Base de Datos" FontSize="11.5" Foreground="#6B7280" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="TxtSistema" Text="0.00 $" FontSize="15" FontWeight="SemiBold" Foreground="#1F2937" Margin="0,3,0,0" HorizontalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Difference value -->
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="Diferencia" FontSize="11.5" Foreground="#6B7280" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="TxtDiferencia" Text="0.00 $" FontSize="15" FontWeight="Bold" Foreground="#C0392B" Margin="0,3,0,0" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </UniformGrid>
+        </Border>
+
+        <!-- 3. Explanation Body -->
+        <ScrollViewer Grid.Row="2" Margin="20,15" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- Detail Text -->
+                <TextBlock Text="¿Por qué ocurre esta diferencia?" FontWeight="SemiBold" FontSize="13.5" Foreground="#111827" Margin="0,0,0,6"/>
+                <TextBlock x:Name="TxtExplicacion" Text="Texto de explicación de la discrepancia..." 
+                           FontSize="12.5" Foreground="#374151" TextWrapping="Wrap" LineHeight="18" Margin="0,0,0,15"/>
+
+                <!-- Suggested Action Card -->
+                <Border Background="#F0F9FF" BorderBrush="#BAE6FD" BorderThickness="1" CornerRadius="6" Padding="12">
+                    <StackPanel>
+                        <TextBlock Text="💡 Acción Recomendada:" FontWeight="Bold" FontSize="12.5" Foreground="#0369A1" Margin="0,0,0,4"/>
+                        <TextBlock x:Name="TxtAccionRecomendada" Text="Acción sugerida..." FontSize="12" Foreground="#075985" TextWrapping="Wrap" LineHeight="16"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- 4. Footer Bar -->
+        <Border Grid.Row="3" Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="0,1,0,0" Padding="20,12">
+            <Button Content="Entendido" 
+                    Click="Cerrar_Click"
+                    HorizontalAlignment="Right"
+                    Width="110" Height="34"
+                    Background="#2563EB" Foreground="White"
+                    FontWeight="SemiBold" FontSize="12"
+                    BorderThickness="0">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}" CornerRadius="6">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Trigger.Setters>
+                                    <Setter Property="Background" Value="#1D4ED8"/>
+                                </Trigger.Setters>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+        </Border>
+    </Grid>
+</Window>

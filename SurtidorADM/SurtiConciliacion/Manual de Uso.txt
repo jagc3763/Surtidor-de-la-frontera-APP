@@ -1,0 +1,54 @@
+Manual de Uso: Surtidor de la Frontera 
+
+- Módulo de Conciliación
+Este manual describe el funcionamiento detallado de cada una de las herramientas, botones y lógicas de cálculo de la aplicación SurtidorADM. El sistema está diseñado para conciliar las transacciones de cobro de Cashea con los abonos reales recibidos en tu cuenta de Banesco, aplicando las tasas oficiales de cambio del Banco Central de Venezuela (BCV).
+
+1. Pantalla Principal: Operaciones y Auditoría
+La pantalla principal se encarga de la recopilación de datos y la ejecución del motor de conciliación general.
+
+Barra Lateral (Sidebar)
+Sincronizar BCV Hoy: Realiza web scraping en tiempo real directamente al portal del BCV (bcv.org.ve) para obtener la tasa oficial del dólar de la fecha actual y la guarda de forma permanente en la base de datos local.
+Cargar Histórico Excel (.xlsx): Permite importar masivamente tasas oficiales antiguas a partir de un archivo Excel. La hoja debe tener nombres en formato ddMMyyyy (ej. "02012026") y la tasa se leerá de la celda G15 de cada pestaña.
+Dashboard de Control: Abre la ventana secundaria de análisis detallado y reportes consolidados.
+🧹 Limpiar Base de Datos: Borra físicamente toda la base de datos local (surtidor.db) y vuelve a estructurar el esquema completamente vacío. Elimina de forma irreversible todos los datos históricos (tasas, ventas, lotes y movimientos de banco) para iniciar una auditoría nueva.
+Botonera de Importación de Datos (Centro)
+📄 1. Lotes Cashea: Abre un selector de archivos para cargar el reporte en Excel de liquidaciones grupales emitido por Cashea. Almacena las referencias de transferencias bancarias y los montos en USD liquidados. El sistema elimina automáticamente duplicados para evitar colisiones.
+📊 2. Ventas Cashea: Importa el reporte detallado de ventas individuales de Cashea que contiene las facturas asociadas, montos financiados e iniciales pagados en caja, sucursales y el cronograma detallado de cuotas (Cuotas 1 a 3).
+🏦 3. Banco Banesco: Carga el estado de cuenta bancario en Excel de Banesco. Filtra automáticamente ignorando comisiones o débitos, guardando únicamente los depósitos mayores a 0.
+Botón de Acción Principal
+⚙️ Ejecutar Auditoría: Activa el motor de conciliación. Cruza cada lote de Cashea con los movimientos de Banesco.
+2. Lógica del Motor de Conciliación (¿Cómo funciona?)
+El motor de conciliación (
+MotorConciliacionService
+) realiza los siguientes cálculos de manera automática al presionar Ejecutar Auditoría:
+
+Alineación de Fecha de Tasa: Como el BCV no publica tasas los fines de semana, el sistema aplica la tasa oficial del día hábil anterior:
+Liquidaciones los Sábados: busca la tasa del Jueves previo (T-2).
+Liquidaciones los Domingos: busca la tasa del Jueves previo (T-3).
+Liquidaciones de Lunes a Viernes: busca la tasa del Día Anterior (T-1).
+Cálculo del Monto Esperado: $$\text{Monto Esperado (VES)} = \text{Total Depositado del Lote (USD)} \times \text{Tasa BCV del día hábil anterior}$$
+Cruce por Referencia Bancaria: Busca en el estado de cuenta de Banesco un movimiento con la misma referencia de liquidación.
+Clasificación de Estatus (con tolerancia de 0.05 Bs):
+Éxito: Si el depósito en banco coincide con el esperado, tolerando un margen de descuadre de hasta $\pm 0.05$ Bs.
+Diferencia de Monto (Dif: X.XX): Si la referencia bancaria existe pero el monto depositado difiere por más de 0.05 Bs. Te indica la diferencia exacta y qué día de tasa del BCV utilizó.
+Falta en Banco: Si la referencia bancaria provista por Cashea no aparece en el estado de cuenta de Banesco.
+3. Panel de Control y Reportes (Dashboard)
+El Dashboard permite realizar consultas granulares sobre las ventas, cobros y saldos de deuda de Cashea.
+
+Barra Lateral (Sidebar del Dashboard)
+📄 Resumen Ventas: Agrupa y resume todas las ventas cargadas por sucursal. Muestra el número total de órdenes, la venta total en USD, el monto total pagado en caja (inicial) y el monto total financiado (todos los valores numéricos truncados a 3 decimales sin redondear).
+✅ Conseguidas: Muestra una lista limpia de todas las liquidaciones de Cashea que sí fueron cobradas y coincidieron correctamente en la cuenta de Banesco.
+❌ No Conseguidas: Muestra la lista de liquidaciones fallidas (con diferencias de montos o que no aparecen depositadas en el banco).
+🏦 Sobrantes Banco: Muestra depósitos/abonos que aparecen en el estado de cuenta bancario pero no coinciden con ninguna referencia de liquidación de Cashea. (Útil para identificar transferencias manuales u otros ingresos del comercio).
+📊 Auditoría Financiera: Muestra un consolidado general del negocio en USD. Suma el total vendido, el total pagado en lotes de Cashea, y convierte todos los depósitos en Bolívares a USD (utilizando la tasa del BCV del día anterior al depósito "Fecha de Valor") para mostrar la diferencia neta de conciliación.
+Buscador de Órdenes
+🔍 Buscar Orden: Ingresa el número de orden o número de factura de un cliente. Te mostrará su sucursal, fecha de compra, total en USD, inicial pagada, monto financiado, estatus y el detalle exacto con fecha y referencia de cada abono recibido en banco.
+Buscador por Rango de Fechas
+Permite seleccionar una fecha de inicio (Desde) y de fin (Hasta) para auditar un período cerrado.
+Genera los siguientes 6 cuadros de métricas basados en las órdenes del período seleccionado:
+Venta Total USD: Suma de las ventas brutas registradas.
+Total Pagado Caja USD: Monto total recaudado por el comercio como pago inicial de los clientes.
+Total Financiado USD: Sumatoria de créditos de financiamiento otorgados.
+Cuotas y Órdenes Pendientes: Cantidad de cuotas que aún deben pagar los clientes, número de órdenes con deuda activa y el monto total que representan.
+Cuotas Canceladas (Pagado): Número de cuotas que ya han sido pagadas por los clientes y el dinero cobrado.
+Monto que debe Cashea: Saldo de financiamiento pendiente que Cashea aún debe recaudar y transferir al comercio.
