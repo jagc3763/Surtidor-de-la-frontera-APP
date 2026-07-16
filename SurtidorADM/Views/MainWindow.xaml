@@ -109,7 +109,8 @@
 
                 <StackPanel Grid.Row="1" Margin="0,15,0,0">
                     <Separator Background="#294B73" Margin="0,0,0,10" Height="1"/>
-                    <TextBlock Text="SurtidorADM Versión 1.0.3" Foreground="#8A9BB0" FontSize="11" HorizontalAlignment="Center" FontWeight="SemiBold"/>
+                    <TextBlock Text="SurtidorADM Versión 1.0.4" Foreground="#8A9BB0" FontSize="11" HorizontalAlignment="Center" FontWeight="SemiBold"/>
+                    <TextBlock Text="By JWDIGITAL" Foreground="#5E738F" FontSize="9.5" HorizontalAlignment="Center" FontWeight="Normal" Margin="0,3,0,0"/>
                 </StackPanel>
             </Grid>
         </Border>
