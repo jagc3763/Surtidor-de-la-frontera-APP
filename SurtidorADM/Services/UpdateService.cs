@@ -25,7 +25,7 @@ namespace SurtidorADM.Services
 
     public class UpdateService
     {
-        public const string VersionActual = "1.0.2";
+        public const string VersionActual = "1.0.3";
         private const string UrlJsonActualizacion = "https://raw.githubusercontent.com/jagc3763/Surtidor-de-la-frontera-APP/main/actualizaciones.json";
         private static readonly HttpClient _httpClient = new HttpClient();
 

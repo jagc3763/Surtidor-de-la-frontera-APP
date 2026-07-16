@@ -33,7 +33,13 @@ jobs:
     - name: Compilar y Publicar
       run: dotnet publish SurtidorADM/SurtidorADM.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o SurtidorADM/PublishOutput
 
-    # 5. Modificar el archivo actualizaciones.json
+    # 5. Configurar git para rama main
+    - name: Cambiar a rama main
+      run: |
+        git checkout main
+        git pull origin main
+
+    # 6. Modificar el archivo actualizaciones.json
     - name: Actualizar metadatos de versión
       shell: pwsh
       run: |
@@ -52,16 +58,16 @@ jobs:
         # Guardar JSON
         $json | ConvertTo-Json -Depth 10 | Set-Content $jsonPath
 
-    # 6. Guardar cambios del JSON en la rama principal (main)
+    # 7. Guardar cambios del JSON en la rama principal (main)
     - name: Commit y Push actualizaciones.json
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git add actualizaciones.json
         git commit -m "chore: actualizar metadatos de version a ${{ github.ref_name }} [skip ci]"
-        git push origin HEAD:main
+        git push origin main
 
-    # 7. Crear el lanzamiento y subir el binario a GitHub Releases
+    # 8. Crear el lanzamiento y subir el binario a GitHub Releases
     - name: Crear GitHub Release
       uses: softprops/action-gh-release@v2
       with:
