@@ -1,0 +1,76 @@
+name: Compilar y Publicar Versión
+
+on:
+  push:
+    tags:
+      - 'v*' # Se ejecuta al subir etiquetas de versión (ej: v1.0.1)
+
+permissions:
+  contents: write # Otorga permisos para crear releases y hacer push de actualizaciones.json
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+    # 1. Obtener el código fuente
+    - name: Checkout del código
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Trae el historial para poder hacer push a main
+
+    # 2. Configurar el SDK de .NET 10
+    - name: Configurar .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    # 3. Restaurar paquetes NuGet
+    - name: Restaurar dependencias
+      run: dotnet restore SurtidorADM/SurtidorADM.csproj
+
+    # 4. Publicar ejecutable optimizado autocontenido
+    - name: Compilar y Publicar
+      run: dotnet publish SurtidorADM/SurtidorADM.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o SurtidorADM/PublishOutput
+
+    # 5. Modificar el archivo actualizaciones.json
+    - name: Actualizar metadatos de versión
+      shell: pwsh
+      run: |
+        $tag = "${{ github.ref_name }}"
+        $version = $tag.TrimStart('v')
+        $jsonPath = "actualizaciones.json"
+        
+        # Leer JSON
+        $json = Get-Content $jsonPath | ConvertFrom-Json
+        
+        # Modificar campos
+        $json.Version = $version
+        $json.UrlDescarga = "https://github.com/${{ github.repository }}/releases/download/$tag/SurtidorADM.exe"
+        $json.Novedades = "• Auto-compilación y lanzamiento oficial de la versión $version."
+        
+        # Guardar JSON
+        $json | ConvertTo-Json -Depth 10 | Set-Content $jsonPath
+
+    # 6. Guardar cambios del JSON en la rama principal (main)
+    - name: Commit y Push actualizaciones.json
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add actualizaciones.json
+        git commit -m "chore: actualizar metadatos de version a ${{ github.ref_name }} [skip ci]"
+        git push origin HEAD:main
+
+    # 7. Crear el lanzamiento y subir el binario a GitHub Releases
+    - name: Crear GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: SurtidorADM/PublishOutput/SurtidorADM.exe
+        name: SurtidorADM ${{ github.ref_name }}
+        body: |
+          Lanzamiento automático de la versión ${{ github.ref_name }}.
+          El sistema del usuario detectará esta actualización e instalará el ejecutable automáticamente.
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
