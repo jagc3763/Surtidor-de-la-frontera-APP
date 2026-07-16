@@ -25,7 +25,7 @@ namespace SurtidorADM.Services
 
     public class UpdateService
     {
-        public const string VersionActual = "1.0.0";
+        public const string VersionActual = "1.0.1";
         private const string UrlJsonActualizacion = "https://raw.githubusercontent.com/jagc3763/SurtidorADM/main/actualizaciones.json";
         private static readonly HttpClient _httpClient = new HttpClient();
 

@@ -27,80 +27,91 @@
                 <DropShadowEffect BlurRadius="15" ShadowDepth="5" Opacity="0.2" Direction="320"/>
             </Border.Effect>
 
-            <StackPanel Margin="25">
+            <Grid Margin="25">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-                <Border Background="White" CornerRadius="12" Padding="15" Margin="0,0,0,30">
-                    <Image Source="pack://application:,,,/Assets/surtidor_logo.png" Height="80" Stretch="Uniform"/>
-                </Border>
+                <StackPanel Grid.Row="0">
+                    <Border Background="White" CornerRadius="12" Padding="15" Margin="0,0,0,30">
+                        <Image Source="pack://application:,,,/Assets/surtidor_logo.png" Height="80" Stretch="Uniform"/>
+                    </Border>
 
-                <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#8A9BB0" Margin="0,0,0,20" Text="PANEL DE CONTROL"/>
+                    <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#8A9BB0" Margin="0,0,0,20" Text="PANEL DE CONTROL"/>
 
-                <Border Background="#1A3A5D" CornerRadius="10" Padding="20" Margin="0,0,0,20">
-                    <StackPanel>
-                        <TextBlock Text="Tasa BCV Oficial (USD)" Foreground="#A0B2C6" FontSize="12" TextTrimming="CharacterEllipsis"/>
-                        <TextBlock Text="{Binding TasaBcvActual, StringFormat={}{0:N2} VES}" 
-                                   Foreground="#F39C12" FontSize="26" FontWeight="Bold" Margin="0,8,0,0"/>
-                    </StackPanel>
-                </Border>
+                    <Border Background="#1A3A5D" CornerRadius="10" Padding="20" Margin="0,0,0,20">
+                        <StackPanel>
+                            <TextBlock Text="Tasa BCV Oficial (USD)" Foreground="#A0B2C6" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding TasaBcvActual, StringFormat={}{0:N2} VES}" 
+                                       Foreground="#F39C12" FontSize="26" FontWeight="Bold" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </Border>
 
-                <Button Command="{Binding SincronizarBcvCommand}"
-                        Height="45" Margin="0,0,0,12" 
-                        Background="#E67E22" Foreground="White" FontWeight="Bold" FontSize="14" Cursor="Hand">
-                    <Button.Template>
-                        <ControlTemplate TargetType="Button">
-                            <Border Background="{TemplateBinding Background}" CornerRadius="8" Padding="10">
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                        </ControlTemplate>
-                    </Button.Template>
-                    <TextBlock Text="Sincronizar BCV Hoy"/>
-                </Button>
+                    <Button Command="{Binding SincronizarBcvCommand}"
+                            Height="45" Margin="0,0,0,12" 
+                            Background="#E67E22" Foreground="White" FontWeight="Bold" FontSize="14" Cursor="Hand">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}" CornerRadius="8" Padding="10">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Button.Template>
+                        <TextBlock Text="Sincronizar BCV Hoy"/>
+                    </Button>
 
-                <Button Command="{Binding ImportarHistoricoCommand}"
-                        Height="45" Margin="0,0,0,30" 
-                        Background="#294B73" Foreground="White" FontWeight="SemiBold" FontSize="13" Cursor="Hand">
-                    <Button.Template>
-                        <ControlTemplate TargetType="Button">
-                            <Border Background="{TemplateBinding Background}" CornerRadius="8" Padding="10">
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                        </ControlTemplate>
-                    </Button.Template>
-                    <TextBlock Text="Cargar Histórico Excel (.xlsx)"/>
-                </Button>
+                    <Button Command="{Binding ImportarHistoricoCommand}"
+                            Height="45" Margin="0,0,0,30" 
+                            Background="#294B73" Foreground="White" FontWeight="SemiBold" FontSize="13" Cursor="Hand">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}" CornerRadius="8" Padding="10">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Button.Template>
+                        <TextBlock Text="Cargar Histórico Excel (.xlsx)"/>
+                    </Button>
 
-                <Button Click="BtnAbrirDashboard_Click"
-        Height="45" Margin="0,0,0,12" 
-        Background="#3498DB" Foreground="White" FontWeight="Bold" FontSize="14" Cursor="Hand">
-                    <Button.Template>
-                        <ControlTemplate TargetType="Button">
-                            <Border Background="{TemplateBinding Background}" CornerRadius="8" Padding="10">
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="📊 Dashboard de Control" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Border>
-                        </ControlTemplate>
-                    </Button.Template>
-                </Button>
+                    <Button Click="BtnAbrirDashboard_Click"
+                            Height="45" Margin="0,0,0,12" 
+                            Background="#3498DB" Foreground="White" FontWeight="Bold" FontSize="14" Cursor="Hand">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}" CornerRadius="8" Padding="10">
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <TextBlock Text="📊 Dashboard de Control" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
 
-                <Button Command="{Binding LimpiarBaseDatosCommand}"
-                        Height="45" Margin="0,0,0,12" 
-                        Background="#C0392B" Foreground="White" FontWeight="Bold" FontSize="14" Cursor="Hand">
-                    <Button.Template>
-                        <ControlTemplate TargetType="Button">
-                            <Border Background="{TemplateBinding Background}" CornerRadius="8" Padding="10">
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                        </ControlTemplate>
-                    </Button.Template>
-                    <TextBlock Text="🧹 Limpiar Base de Datos"/>
-                </Button>
+                    <Button Command="{Binding LimpiarBaseDatosCommand}"
+                            Height="45" Margin="0,0,0,12" 
+                            Background="#C0392B" Foreground="White" FontWeight="Bold" FontSize="14" Cursor="Hand">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}" CornerRadius="8" Padding="10">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Button.Template>
+                        <TextBlock Text="🧹 Limpiar Base de Datos"/>
+                    </Button>
 
-                <Separator Background="#294B73" Margin="0,10,0,20" Height="1"/>
+                    <Separator Background="#294B73" Margin="0,10,0,20" Height="1"/>
 
-                <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#8A9BB0" Margin="0,0,0,10" Text="ESTADO DEL SISTEMA"/>
-                <TextBlock Text="{Binding MensajeEstado}" Foreground="#D1D9E2" TextWrapping="Wrap" FontSize="13" LineHeight="18"/>
-            </StackPanel>
+                    <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#8A9BB0" Margin="0,0,0,10" Text="ESTADO DEL SISTEMA"/>
+                    <TextBlock Text="{Binding MensajeEstado}" Foreground="#D1D9E2" TextWrapping="Wrap" FontSize="13" LineHeight="18"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Margin="0,15,0,0">
+                    <Separator Background="#294B73" Margin="0,0,0,10" Height="1"/>
+                    <TextBlock Text="SurtidorADM Versión 1.0.1" Foreground="#8A9BB0" FontSize="11" HorizontalAlignment="Center" FontWeight="SemiBold"/>
+                </StackPanel>
+            </Grid>
         </Border>
 
         <Grid Grid.Column="1" Margin="30">
