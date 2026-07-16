@@ -30,5 +30,29 @@ namespace SurtidorADM.Views
                 explanationWindow.ShowDialog();
             }
         }
+
+        private async void BtnBuscarActualizaciones_Click(object sender, RoutedEventArgs e)
+        {
+            var updateService = new SurtidorADM.Services.UpdateService();
+            
+            var btn = sender as System.Windows.Controls.Button;
+            if (btn != null) btn.IsEnabled = false;
+            
+            var checkResult = await updateService.VerificarActualizacionAsync();
+            
+            if (btn != null) btn.IsEnabled = true;
+
+            if (checkResult.HayActualizacion)
+            {
+                var updateWin = new SurtidorADM.Views.ActualizacionWindow(checkResult);
+                updateWin.Owner = this;
+                updateWin.ShowDialog();
+            }
+            else
+            {
+                MessageBox.Show($"Su aplicación ya se encuentra actualizada a la última versión disponible (v{SurtidorADM.Services.UpdateService.VersionActual}).", 
+                    "Buscar Actualizaciones", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
     }
 }

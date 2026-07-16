@@ -110,7 +110,20 @@
                 <StackPanel Grid.Row="1" Margin="0,15,0,0">
                     <Separator Background="#294B73" Margin="0,0,0,10" Height="1"/>
                     <TextBlock Text="SurtidorADM Versión 1.0.4" Foreground="#8A9BB0" FontSize="11" HorizontalAlignment="Center" FontWeight="SemiBold"/>
-                    <TextBlock Text="By JWDIGITAL" Foreground="#5E738F" FontSize="9.5" HorizontalAlignment="Center" FontWeight="Normal" Margin="0,3,0,0"/>
+                    <Button Content="Buscar Actualizaciones" 
+                            Click="BtnBuscarActualizaciones_Click"
+                            Height="24" Width="145" Margin="0,5,0,0"
+                            Background="#294B73" Foreground="#93C5FD" FontSize="10" FontWeight="SemiBold"
+                            BorderThickness="0" Cursor="Hand">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                    <TextBlock Text="By JWDIGITAL" Foreground="#5E738F" FontSize="9.5" HorizontalAlignment="Center" FontWeight="Normal" Margin="0,5,0,0"/>
                 </StackPanel>
             </Grid>
         </Border>
