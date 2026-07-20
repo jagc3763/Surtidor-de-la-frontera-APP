@@ -109,7 +109,7 @@
 
                 <StackPanel Grid.Row="1" Margin="0,15,0,0">
                     <Separator Background="#294B73" Margin="0,0,0,10" Height="1"/>
-                    <TextBlock Text="SurtidorADM Versión 1.0.5" Foreground="#8A9BB0" FontSize="11" HorizontalAlignment="Center" FontWeight="SemiBold"/>
+                    <TextBlock Text="SurtidorADM Versión 1.0.6" Foreground="#8A9BB0" FontSize="11" HorizontalAlignment="Center" FontWeight="SemiBold"/>
                     <Button Content="Buscar Actualizaciones" 
                             Click="BtnBuscarActualizaciones_Click"
                             Height="24" Width="145" Margin="0,5,0,0"
@@ -171,7 +171,7 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
-                    <Button Grid.Column="0" Command="{Binding ImportarPagosCasheaCommand}" Height="40" Background="#F4F6F9" BorderBrush="#D1D9E2" BorderThickness="1" Cursor="Hand" Content="📄 1. Lotes Cashea" FontWeight="SemiBold" Foreground="#294B73"/>
+                    <Button Grid.Column="0" Command="{Binding ImportarPagosCasheaCommand}" Height="40" Background="#F4F6F9" BorderBrush="#D1D9E2" BorderThickness="1" Cursor="Hand" Content="📄 1. Bancos Cashea" FontWeight="SemiBold" Foreground="#294B73"/>
                     <Button Grid.Column="2" Command="{Binding ImportarVentasCasheaCommand}" Height="40" Background="#F4F6F9" BorderBrush="#D1D9E2" BorderThickness="1" Cursor="Hand" Content="📊 2. Ventas Cashea" FontWeight="SemiBold" Foreground="#294B73"/>
                     <Button Grid.Column="4" Command="{Binding ImportarBancoCommand}" Height="40" Background="#EAF2F8" BorderBrush="#AED6F1" BorderThickness="1" Cursor="Hand" Content="🏦 3. Banco Banesco" FontWeight="Bold" Foreground="#154360"/>
                 </Grid>
