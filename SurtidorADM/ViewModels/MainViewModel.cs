@@ -435,6 +435,23 @@ namespace SurtidorADM.ViewModels
                     var parser = new CasheaReportParser();
                     var datosCashea = await Task.Run(() => parser.ParsearReporteMensual(openFileDialog.FileName));
 
+                    // Validar nombre de empresa / aliado para alertar al usuario si es incorrecto
+                    if (!string.IsNullOrEmpty(datosCashea.NombreEmpresa) && 
+                        !datosCashea.NombreEmpresa.Contains("SURTIDOR DE LA FRONTERA", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var warningMsg = $"⚠️ ADVERTENCIA: El reporte mensual cargado pertenece a '{datosCashea.NombreEmpresa}'.\n\n" +
+                                         $"Recuerda que estás conciliando en el sistema de 'EL SURTIDOR DE LA FRONTERA, C.A.'. " +
+                                         $"Si subes el reporte mensual de otra empresa, verás discrepancias masivas en el cotejo.\n\n" +
+                                         $"¿Deseas continuar con el cotejo de todas formas?";
+                        
+                        var result = MessageBox.Show(warningMsg, "Alerta: Reporte de Empresa Incorrecto", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                        if (result == MessageBoxResult.No)
+                        {
+                            MensajeEstado = "Operación cancelada. Por favor, sube el reporte mensual correcto.";
+                            return;
+                        }
+                    }
+
                     PeriodoCotejo = $"Período: Del {datosCashea.FechaDesde:dd/MM/yyyy} Hasta {datosCashea.FechaHasta:dd/MM/yyyy}";
 
                     using (var context = new SurtidorDbContext())

@@ -93,7 +93,11 @@ namespace SurtidorADM.Services
                     string cuotaStr = ObtenerTexto(ws, i, 8); // H=8 (Nro cuota pagada)
                     string idOrden = ObtenerTexto(ws, i, 10); // J=10 (Orden)
 
-                    int.TryParse(cuotaStr, out int cuotaNo);
+                    int cuotaNo = -1;
+                    if (!string.IsNullOrWhiteSpace(cuotaStr))
+                    {
+                        int.TryParse(cuotaStr, out cuotaNo);
+                    }
 
                     var pago = new PagoLiquidacionCashea
                     {

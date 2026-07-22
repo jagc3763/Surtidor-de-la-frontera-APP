@@ -11,6 +11,7 @@ namespace SurtidorADM.Services
 {
     public class CasheaReporteDatos
     {
+        public string NombreEmpresa { get; set; }
         public DateTime FechaDesde { get; set; }
         public DateTime FechaHasta { get; set; }
         public decimal VentasTotales { get; set; }
@@ -44,6 +45,14 @@ namespace SurtidorADM.Services
                         throw new Exception("No se encontró la hoja 'Reporte Mensual' en el archivo.");
 
                     var datos = new CasheaReporteDatos();
+
+                    // 0. Capturar Nombre de Empresa (usualmente fila 4 o 5, columna 3)
+                    string empresa = ws.Cell(4, 3).Value.ToString().Trim();
+                    if (string.IsNullOrEmpty(empresa))
+                    {
+                        empresa = ws.Cell(5, 3).Value.ToString().Trim();
+                    }
+                    datos.NombreEmpresa = empresa;
 
                     // 1. Buscar periodo de fechas (usualmente en la columna B, fila 8 o similar)
                     for (int r = 1; r <= 30; r++)
@@ -100,7 +109,8 @@ namespace SurtidorADM.Services
                         {
                             datos.RecibidoBanco = val;
                         }
-                        else if (label.Contains("Cuotas adelantadas", StringComparison.OrdinalIgnoreCase))
+                        else if (label.Contains("Cuotas adelantadas de clientes", StringComparison.OrdinalIgnoreCase) ||
+                                 (label.Contains("Cuotas adelantadas", StringComparison.OrdinalIgnoreCase) && label.Contains("corresponde a otro", StringComparison.OrdinalIgnoreCase)))
                         {
                             datos.CuotasAdelantadas = val;
                         }
