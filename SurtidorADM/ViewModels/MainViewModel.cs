@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using System.Text;
 
 namespace SurtidorADM.ViewModels
 {
@@ -60,6 +61,23 @@ namespace SurtidorADM.ViewModels
         public ICommand LimpiarBaseDatosCommand { get; }
         public ICommand CargarReporteMensualCommand { get; }
         public ICommand VerDetallesDiferenciasCommand { get; }
+        public ICommand EnviarMensajeChatCommand { get; }
+
+        private string _mensajeChatTexto = string.Empty;
+        public string MensajeChatTexto
+        {
+            get => _mensajeChatTexto;
+            set => SetProperty(ref _mensajeChatTexto, value);
+        }
+
+        public ObservableCollection<ItemMensajeChat> MensajesChat { get; } = new()
+        {
+            new ItemMensajeChat 
+            { 
+                Contenido = "¡Hola! Soy tu Asistente IA Contable de El Surtidor de la Frontera. ¿En qué puedo ayudarte hoy referente a tus ventas, pagos o conciliaciones bancarias?", 
+                EsUsuario = false 
+            }
+        };
 
         private ObservableCollection<ItemCotejo> _itemsCotejo = new();
         public ObservableCollection<ItemCotejo> ItemsCotejo
@@ -113,6 +131,7 @@ namespace SurtidorADM.ViewModels
             LimpiarBaseDatosCommand = new RelayCommand(async _ => await LimpiarBaseDatosAsync(), _ => !IsBusy);
             CargarReporteMensualCommand = new RelayCommand(async _ => await CargarReporteMensualAsync(), _ => !IsBusy);
             VerDetallesDiferenciasCommand = new RelayCommand(_ => VerDetallesDiferencias(), _ => HayDiferencias && !IsBusy);
+            EnviarMensajeChatCommand = new RelayCommand(async _ => await EnviarMensajeChatAsync(), _ => !IsBusy);
         }
 
         // ==========================================
@@ -724,6 +743,65 @@ namespace SurtidorADM.ViewModels
             var win = new SurtidorADM.Views.DetalleErroresCotejoWindow(DetallesDiferencias);
             win.Owner = System.Windows.Application.Current.MainWindow;
             win.ShowDialog();
+        }
+
+        private readonly GeminiChatService _geminiChatService = new();
+
+        private async Task EnviarMensajeChatAsync()
+        {
+            string userMsg = MensajeChatTexto.Trim();
+            if (string.IsNullOrEmpty(userMsg)) return;
+
+            // Limpiar caja de texto
+            MensajeChatTexto = string.Empty;
+
+            // Agregar mensaje del usuario a la lista
+            MensajesChat.Add(new ItemMensajeChat { Contenido = userMsg, EsUsuario = true });
+
+            IsBusy = true;
+            MensajeEstado = "El Asistente IA está analizando los datos...";
+
+            try
+            {
+                // Compilar el contexto en memoria (cotejo de reporte mensual y discrepancias de esta sesión)
+                var sbContexto = new StringBuilder();
+                if (ItemsCotejo != null && ItemsCotejo.Any())
+                {
+                    sbContexto.AppendLine("=== COTEJO DE REPORTE MENSUAL EN PANTALLA (DATOS EN MEMORIA DE ESTA SESIÓN) ===");
+                    foreach (var item in ItemsCotejo)
+                    {
+                        sbContexto.AppendLine($"- Concepto: {item.Concepto} | Monto Reporte: {item.ValorCashea} | Monto Sistema: {item.ValorSistema} | Diferencia: {item.Diferencia} | Estado: {item.Estado} | Coincide: {(item.Coincide ? "Sí" : "No")}");
+                    }
+                    sbContexto.AppendLine();
+                }
+
+                if (DetallesDiferencias != null && DetallesDiferencias.Any())
+                {
+                    sbContexto.AppendLine("=== DETALLE DE DISCREPANCIAS Y ERRORES DE CONCILIACIÓN INDIVIDUAL EN MEMORIA ===");
+                    foreach (var err in DetallesDiferencias)
+                    {
+                        sbContexto.AppendLine($"- Referencia: {err.Referencia} | Fecha: {err.Fecha} | Tipo Error: {err.TipoError} | Detalle: {err.Detalle} | Impacto USD: {err.ImpactoUsd}");
+                    }
+                    sbContexto.AppendLine();
+                }
+
+                // Llamado asíncrono a la IA enviándole el contexto de la base de datos + datos de la sesión actual
+                string respuestaIa = await _geminiChatService.ResponderPreguntaAsync(userMsg, sbContexto.ToString());
+                
+                // Agregar respuesta de la IA a la lista
+                MensajesChat.Add(new ItemMensajeChat { Contenido = respuestaIa, EsUsuario = false });
+                
+                MensajeEstado = "Listo.";
+            }
+            catch (Exception ex)
+            {
+                MensajesChat.Add(new ItemMensajeChat { Contenido = $"❌ Error: No se pudo obtener respuesta de la IA. {ex.Message}", EsUsuario = false });
+                MensajeEstado = "Error en comunicación con la IA.";
+            }
+            finally
+            {
+                IsBusy = false;
+            }
         }
     }
 

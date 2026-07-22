@@ -109,7 +109,7 @@
 
                 <StackPanel Grid.Row="1" Margin="0,15,0,0">
                     <Separator Background="#294B73" Margin="0,0,0,10" Height="1"/>
-                    <TextBlock Text="SurtidorADM Versión 1.0.7" Foreground="#8A9BB0" FontSize="11" HorizontalAlignment="Center" FontWeight="SemiBold"/>
+                    <TextBlock Text="SurtidorADM Versión 1.0.8" Foreground="#8A9BB0" FontSize="11" HorizontalAlignment="Center" FontWeight="SemiBold"/>
                     <Button Content="Buscar Actualizaciones" 
                             Click="BtnBuscarActualizaciones_Click"
                             Height="24" Width="145" Margin="0,5,0,0"
@@ -308,6 +308,117 @@
                                     <DataGridTextColumn Header="Estado" Binding="{Binding Estado}" Width="*"/>
                                 </DataGrid.Columns>
                             </DataGrid>
+                        </Grid>
+                    </Border>
+                </TabItem>
+
+                <!-- Tab 3: Asistente IA -->
+                <TabItem Header="💬 Asistente IA" FontSize="14" FontWeight="SemiBold" Padding="15,6">
+                    <Border Background="White" CornerRadius="0,12,12,12" BorderBrush="#E1E5EA" BorderThickness="1" Padding="20">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <!-- Configuration: Key API -->
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="15"/>
+                                <!-- Chat history -->
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="15"/>
+                                <!-- Input box -->
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Configuration: API Key -->
+                            <Border Grid.Row="0" Background="#F8FAFC" CornerRadius="8" BorderBrush="#E2E8F0" BorderThickness="1" Padding="15,10">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="15"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="15"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="Google Gemini API Key" FontWeight="Bold" Foreground="#1E293B" FontSize="12.5"/>
+                                        <TextBlock Text="Requerida para el chat (obténla gratis en Google AI Studio)" Foreground="#64748B" FontSize="11" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <PasswordBox x:Name="PbApiKey" Grid.Column="2" Height="32" Padding="8,0" VerticalAlignment="Center" Background="White" BorderBrush="#CBD5E1" BorderThickness="1"/>
+                                    <Button Grid.Column="4" Click="BtnGuardarApiKey_Click" Content="Guardar Clave" Height="32" Padding="15,0" Background="#3B82F6" Foreground="White" FontWeight="Bold" Cursor="Hand">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border Background="{TemplateBinding Background}" CornerRadius="6">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="12,0"/>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+                                </Grid>
+                            </Border>
+
+                            <!-- Chat History ScrollViewer -->
+                            <Border Grid.Row="2" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Background="#F8FAFC" Padding="10">
+                                <ScrollViewer x:Name="ChatScrollViewer" VerticalScrollBarVisibility="Auto">
+                                    <ItemsControl ItemsSource="{Binding MensajesChat}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="0,5">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Border HorizontalAlignment="{Binding Alineacion}" CornerRadius="12" Padding="12,8" Background="{Binding ColorBurbuja}" MaxWidth="600">
+                                                        <StackPanel>
+                                                            <TextBlock Text="{Binding Contenido}" TextWrapping="Wrap" Foreground="{Binding ColorTexto}" FontSize="13.5" LineHeight="18"/>
+                                                            <TextBlock Text="{Binding Fecha, StringFormat=hh:mm tt}" FontSize="9.5" Foreground="#94A3B8" HorizontalAlignment="Right" Margin="0,4,0,0"/>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </Border>
+
+                            <!-- Input Box Area -->
+                            <Grid Grid.Row="4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="15"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Text="{Binding MensajeChatTexto, UpdateSourceTrigger=PropertyChanged}" 
+                                         KeyDown="TextBoxChat_KeyDown"
+                                         Height="40" Padding="12,0" VerticalContentAlignment="Center"
+                                         Background="White" BorderBrush="#CBD5E1" BorderThickness="1"
+                                         FontSize="13.5">
+                                    <TextBox.Style>
+                                        <Style TargetType="TextBox">
+                                            <Style.Resources>
+                                                <VisualBrush x:Key="PlaceholderBrush" AlignmentX="Left" AlignmentY="Center" Stretch="None">
+                                                    <VisualBrush.Visual>
+                                                        <TextBlock Text="Escribe tu pregunta sobre conciliación aquí..." Foreground="#94A3B8" FontSize="13.5" Margin="10,0,0,0"/>
+                                                    </VisualBrush.Visual>
+                                                </VisualBrush>
+                                            </Style.Resources>
+                                            <Style.Triggers>
+                                                <Trigger Property="Text" Value="">
+                                                    <Setter Property="Background" Value="{StaticResource PlaceholderBrush}"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBox.Style>
+                                </TextBox>
+                                <Button Grid.Column="2" Command="{Binding EnviarMensajeChatCommand}" Height="40" Padding="25,0" Background="#10B981" Foreground="White" FontWeight="Bold" FontSize="13.5" Cursor="Hand">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{TemplateBinding Background}" CornerRadius="8">
+                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="15,0">
+                                                    <TextBlock Text="✈️" Margin="0,0,8,0"/>
+                                                    <TextBlock Text="Enviar"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                            </Grid>
                         </Grid>
                     </Border>
                 </TabItem>

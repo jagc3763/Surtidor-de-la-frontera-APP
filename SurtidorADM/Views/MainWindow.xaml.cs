@@ -12,6 +12,49 @@ namespace SurtidorADM.Views
         {
             InitializeComponent();
             DataContext = new MainViewModel();
+
+            // Cargar API Key guardada si existe
+            try
+            {
+                var geminiService = new SurtidorADM.Services.GeminiChatService();
+                PbApiKey.Password = geminiService.ObtenerApiKey();
+            }
+            catch { /* Ignore startup load errors */ }
+        }
+
+        private void BtnGuardarApiKey_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var geminiService = new SurtidorADM.Services.GeminiChatService();
+                geminiService.GuardarApiKey(PbApiKey.Password);
+                MessageBox.Show("¡API Key guardada exitosamente! Ya puedes interactuar con el Asistente IA.", "Guardar Clave", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (System.Exception ex)
+            {
+                MessageBox.Show($"Error al guardar la clave: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void TextBoxChat_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Enter)
+            {
+                // Trigger the send command in the ViewModel
+                if (DataContext is MainViewModel vm && vm.EnviarMensajeChatCommand.CanExecute(null))
+                {
+                    vm.EnviarMensajeChatCommand.Execute(null);
+                    
+                    // Hacer scroll hacia abajo en la conversación
+                    System.Threading.Tasks.Task.Delay(50).ContinueWith(t => 
+                    {
+                        Dispatcher.Invoke(() => 
+                        {
+                            ChatScrollViewer.ScrollToEnd();
+                        });
+                    });
+                }
+            }
         }
 
         private void BtnAbrirDashboard_Click(object sender, RoutedEventArgs e)
