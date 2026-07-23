@@ -659,6 +659,12 @@ namespace SurtidorADM.ViewModels
                         AgregarCotejo("Cuotas Adelantadas", datosCashea.CuotasAdelantadas, cuotasAdelantadasSystem);
                         AgregarCotejo("Banco Neto (Cuotas Reconocidas)", datosCashea.BancoNeto, bancoNetoSystem);
                         AgregarCotejo("Cuentas por Cobrar (Deuda Vencida)", datosCashea.CuentasPorCobrar, cuentasPorCobrarSystem);
+
+                        // Guardar en el estado de sesión global
+                        SessionState.LastDatosCashea = datosCashea;
+                        SessionState.LastItemsCotejo = ItemsCotejo.ToList();
+                        SessionState.LastDetallesDiferencias = DetallesDiferencias.ToList();
+                        SessionState.LastReportPath = openFileDialog.FileName;
                     }
 
                     OnPropertyChanged(nameof(HayDiferencias));
@@ -778,12 +784,66 @@ namespace SurtidorADM.ViewModels
 
                 if (DetallesDiferencias != null && DetallesDiferencias.Any())
                 {
-                    sbContexto.AppendLine("=== DETALLE DE DISCREPANCIAS Y ERRORES DE CONCILIACIÓN INDIVIDUAL EN MEMORIA ===");
-                    foreach (var err in DetallesDiferencias)
+                    sbContexto.AppendLine("=== RESUMEN DE DISCREPANCIAS INDIVIDUALES ===");
+                    sbContexto.AppendLine($"Total general de transacciones con discrepancia: {DetallesDiferencias.Count}");
+
+                    decimal LocalParseDecimal(string valStr)
                     {
-                        sbContexto.AppendLine($"- Referencia: {err.Referencia} | Fecha: {err.Fecha} | Tipo Error: {err.TipoError} | Detalle: {err.Detalle} | Impacto USD: {err.ImpactoUsd}");
+                        if (string.IsNullOrWhiteSpace(valStr)) return 0;
+                        string clean = System.Text.RegularExpressions.Regex.Replace(valStr, @"[^\d\.\-]", "");
+                        if (decimal.TryParse(clean, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal res))
+                        {
+                            return res;
+                        }
+                        return 0;
+                    }
+
+                    var grupos = DetallesDiferencias
+                        .GroupBy(d => d.TipoError)
+                        .Select(g => new { 
+                            Tipo = g.Key, 
+                            Cant = g.Count(), 
+                            Suma = g.Sum(x => LocalParseDecimal(x.ImpactoUsd)) 
+                        });
+
+                    foreach (var grp in grupos)
+                    {
+                        sbContexto.AppendLine($"- {grp.Tipo}: {grp.Cant} casos | Impacto total: {grp.Suma:N2} USD");
                     }
                     sbContexto.AppendLine();
+
+                    // Incluir las 15 discrepancias con mayor impacto absoluto para contexto visual
+                    sbContexto.AppendLine("=== TOP 15 DISCREPANCIAS MAYORES (IMPACTO ABSOLUTO) ===");
+                    var top15 = DetallesDiferencias
+                        .OrderByDescending(d => Math.Abs(LocalParseDecimal(d.ImpactoUsd)))
+                        .Take(15);
+                    foreach (var err in top15)
+                    {
+                        sbContexto.AppendLine($"- Ref: {err.Referencia} | Fecha: {err.Fecha} | Tipo: {err.TipoError} | Detalle: {err.Detalle} | Impacto: {err.ImpactoUsd}");
+                    }
+                    sbContexto.AppendLine();
+
+                    // Buscar coincidencias específicas si el usuario consulta una referencia en su mensaje
+                    var refsEncontradas = new List<string>();
+                    var matches = System.Text.RegularExpressions.Regex.Matches(userMsg, @"\b\d{6,12}\b");
+                    foreach (System.Text.RegularExpressions.Match match in matches)
+                    {
+                        string refBusqueda = match.Value;
+                        var coincidentes = DetallesDiferencias
+                            .Where(d => d.Referencia == refBusqueda || (d.Detalle != null && d.Detalle.Contains(refBusqueda)))
+                            .ToList();
+                        
+                        if (coincidentes.Any() && !refsEncontradas.Contains(refBusqueda))
+                        {
+                            refsEncontradas.Add(refBusqueda);
+                            sbContexto.AppendLine($"=== INFORMACION EXTRA DE TRANSACCION CONSULTADA ({refBusqueda}) ===");
+                            foreach (var err in coincidentes)
+                            {
+                                sbContexto.AppendLine($"- Ref: {err.Referencia} | Fecha: {err.Fecha} | Tipo: {err.TipoError} | Detalle: {err.Detalle} | Impacto: {err.ImpactoUsd}");
+                            }
+                            sbContexto.AppendLine();
+                        }
+                    }
                 }
 
                 // Llamado asíncrono a la IA enviándole el contexto de la base de datos + datos de la sesión actual

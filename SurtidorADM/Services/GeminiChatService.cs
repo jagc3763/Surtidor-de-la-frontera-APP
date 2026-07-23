@@ -128,11 +128,26 @@ namespace SurtidorADM.Services
                     }
                 };
 
-                string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={apiKey}";
+                string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={apiKey}";
                 string jsonPayload = JsonSerializer.Serialize(requestBody);
                 var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
 
-                var response = await _httpClient.PostAsync(url, content);
+                HttpResponseMessage response = null;
+                int maxRetries = 3;
+                int delayMs = 1000;
+                for (int attempt = 1; attempt <= maxRetries; attempt++)
+                {
+                    var stringContent = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+                    response = await _httpClient.PostAsync(url, stringContent);
+                    if (response.StatusCode == (System.Net.HttpStatusCode)429 && attempt < maxRetries)
+                    {
+                        await Task.Delay(delayMs);
+                        delayMs *= 2; // Exponential backoff
+                        continue;
+                    }
+                    break;
+                }
+
                 if (!response.IsSuccessStatusCode)
                 {
                     string errorDetail = await response.Content.ReadAsStringAsync();

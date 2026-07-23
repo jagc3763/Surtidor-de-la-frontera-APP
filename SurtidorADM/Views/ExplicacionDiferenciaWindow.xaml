@@ -56,14 +56,16 @@
             <StackPanel>
                 <!-- Detail Text -->
                 <TextBlock Text="¿Por qué ocurre esta diferencia?" FontWeight="SemiBold" FontSize="13.5" Foreground="#111827" Margin="0,0,0,6"/>
-                <TextBlock x:Name="TxtExplicacion" Text="Texto de explicación de la discrepancia..." 
-                           FontSize="12.5" Foreground="#374151" TextWrapping="Wrap" LineHeight="18" Margin="0,0,0,15"/>
+                <TextBox x:Name="TxtExplicacion" Text="Texto de explicación de la discrepancia..." 
+                           IsReadOnly="True" Background="Transparent" BorderThickness="0"
+                           FontSize="12.5" Foreground="#374151" TextWrapping="Wrap" Margin="0,0,0,15"
+                           IsReadOnlyCaretVisible="False" SelectionBrush="#93C5FD"/>
 
                 <!-- Suggested Action Card -->
                 <Border Background="#F0F9FF" BorderBrush="#BAE6FD" BorderThickness="1" CornerRadius="6" Padding="12">
                     <StackPanel>
                         <TextBlock Text="💡 Acción Recomendada:" FontWeight="Bold" FontSize="12.5" Foreground="#0369A1" Margin="0,0,0,4"/>
-                        <TextBlock x:Name="TxtAccionRecomendada" Text="Acción sugerida..." FontSize="12" Foreground="#075985" TextWrapping="Wrap" LineHeight="16"/>
+                        <TextBox x:Name="TxtAccionRecomendada" Text="Acción sugerida..." IsReadOnly="True" Background="Transparent" BorderThickness="0" FontSize="12" Foreground="#075985" TextWrapping="Wrap" IsReadOnlyCaretVisible="False" SelectionBrush="#93C5FD"/>
                     </StackPanel>
                 </Border>
             </StackPanel>

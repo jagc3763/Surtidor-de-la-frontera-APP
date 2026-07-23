@@ -51,6 +51,8 @@
                 <DataGrid x:Name="GridDiferencias"
                           AutoGenerateColumns="False"
                           IsReadOnly="True"
+                          SelectionUnit="CellOrRowHeader"
+                          ClipboardCopyMode="ExcludeHeader"
                           GridLinesVisibility="Horizontal"
                           HorizontalGridLinesBrush="#E5E7EB"
                           BorderThickness="0"

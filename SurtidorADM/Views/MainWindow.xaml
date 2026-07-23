@@ -109,7 +109,7 @@
 
                 <StackPanel Grid.Row="1" Margin="0,15,0,0">
                     <Separator Background="#294B73" Margin="0,0,0,10" Height="1"/>
-                    <TextBlock Text="SurtidorADM Versión 1.0.9" Foreground="#8A9BB0" FontSize="11" HorizontalAlignment="Center" FontWeight="SemiBold"/>
+                    <TextBlock Text="SurtidorADM Versión 1.1.0" Foreground="#8A9BB0" FontSize="11" HorizontalAlignment="Center" FontWeight="SemiBold"/>
                     <Button Content="Buscar Actualizaciones" 
                             Click="BtnBuscarActualizaciones_Click"
                             Height="24" Width="145" Margin="0,5,0,0"
@@ -182,6 +182,7 @@
                     <Border Background="White" CornerRadius="0,12,12,12" BorderBrush="#E1E5EA" BorderThickness="1" ClipToBounds="True">
                         <DataGrid ItemsSource="{Binding ResultadosConciliacion}" AutoGenerateColumns="False" 
                                   CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column" 
+                                  SelectionUnit="CellOrRowHeader" ClipboardCopyMode="ExcludeHeader" 
                                   GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#E1E5EA" BorderThickness="0" Background="Transparent"
                                   RowHeight="35" Padding="5">
                             <DataGrid.RowStyle>
@@ -280,7 +281,8 @@
 
                             <!-- Tabla de Comparación -->
                             <DataGrid Grid.Row="2" ItemsSource="{Binding ItemsCotejo}" AutoGenerateColumns="False"
-                                      CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column"
+                                      CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column" 
+                                      SelectionUnit="CellOrRowHeader" ClipboardCopyMode="ExcludeHeader"
                                       GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#E1E5EA" BorderThickness="0" Background="Transparent"
                                       RowHeight="38" Visibility="{Binding MostrarPanelCotejo, Converter={StaticResource BooleanToVisibilityConverter}}"
                                       MouseDoubleClick="CotejoGrid_MouseDoubleClick">
@@ -366,7 +368,7 @@
                                                     </Grid.ColumnDefinitions>
                                                     <Border HorizontalAlignment="{Binding Alineacion}" CornerRadius="12" Padding="12,8" Background="{Binding ColorBurbuja}" MaxWidth="600">
                                                         <StackPanel>
-                                                            <TextBlock Text="{Binding Contenido}" TextWrapping="Wrap" Foreground="{Binding ColorTexto}" FontSize="13.5" LineHeight="18"/>
+                                                            <TextBox Text="{Binding Contenido, Mode=OneWay}" TextWrapping="Wrap" IsReadOnly="True" Background="Transparent" BorderThickness="0" Foreground="{Binding ColorTexto}" FontSize="13.5" Padding="0" IsReadOnlyCaretVisible="False" SelectionBrush="#93C5FD"/>
                                                             <TextBlock Text="{Binding Fecha, StringFormat=hh:mm tt}" FontSize="9.5" Foreground="#94A3B8" HorizontalAlignment="Right" Margin="0,4,0,0"/>
                                                         </StackPanel>
                                                     </Border>

@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using ClosedXML.Excel;
 using SurtidorADM.Data;
 using SurtidorADM.Models;
+using SurtidorADM.ViewModels;
 
 namespace SurtidorADM.Views
 {
@@ -185,6 +186,17 @@ namespace SurtidorADM.Views
             {
                 await Task.Run(async () =>
                 {
+                    decimal ParseDecimal(string valStr)
+                    {
+                        if (string.IsNullOrWhiteSpace(valStr)) return 0;
+                        string clean = System.Text.RegularExpressions.Regex.Replace(valStr, @"[^\d\.\-]", "");
+                        if (decimal.TryParse(clean, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal res))
+                        {
+                            return res;
+                        }
+                        return 0;
+                    }
+
                     using (var context = new SurtidorDbContext())
                     {
                         var fechaDesde = desde.Date;
@@ -200,12 +212,22 @@ namespace SurtidorADM.Views
                         var banco = await context.MovimientosBancarios.Where(m => m.Fecha <= fechaHasta).ToListAsync();
                         var historicoTasas = await context.TasasDiarias.ToListAsync();
 
-                        // 2. Intentar cargar plantilla
-                        string templatePath = @"C:\Users\jagc3763\Downloads\Reporte_Mensual_04_2026.xlsx";
+                        // 2. Intentar cargar plantilla a partir del reporte mensual de la sesión actual
+                        string templatePath = SessionState.LastReportPath;
+                        if (string.IsNullOrEmpty(templatePath) || !File.Exists(templatePath))
+                        {
+                            // Fallback local: carpeta archivos\JUNIO CASHEA\ o carpeta archivos\
+                            templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "archivos", "JUNIO CASHEA", "Reporte_Mensual_06_2026 (5).xlsx");
+                            if (!File.Exists(templatePath))
+                            {
+                                templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "archivos", "Reporte_Mensual_04_2026 (20).xlsx");
+                            }
+                        }
+
                         XLWorkbook workbook;
                         bool loadedFromTemplate = false;
 
-                        if (File.Exists(templatePath))
+                        if (!string.IsNullOrEmpty(templatePath) && File.Exists(templatePath))
                         {
                             try
                             {
@@ -381,53 +403,331 @@ namespace SurtidorADM.Views
                         // 4. Modificar Hoja 1: Reporte Mensual
                         if (chkResumenGral.Dispatcher.Invoke(() => chkResumenGral.IsChecked) == true)
                         {
+                            // Definición de funciones locales auxiliares para formatear columnas de comparación
+                            void EscribirCabeceras(IXLWorksheet worksheet, int row)
+                            {
+                                worksheet.Cell(row, 4).Value = "Monto Cashea";
+                                worksheet.Cell(row, 4).Style.Font.Bold = true;
+                                worksheet.Cell(row, 4).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+
+                                worksheet.Cell(row, 5).Value = "Monto Sistema";
+                                worksheet.Cell(row, 5).Style.Font.Bold = true;
+                                worksheet.Cell(row, 5).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                                worksheet.Cell(row, 5).Style.Font.FontColor = XLColor.FromHtml("#294B73");
+
+                                worksheet.Cell(row, 6).Value = "Diferencia";
+                                worksheet.Cell(row, 6).Style.Font.Bold = true;
+                                worksheet.Cell(row, 6).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+
+                                worksheet.Cell(row, 7).Value = "Estado";
+                                worksheet.Cell(row, 7).Style.Font.Bold = true;
+                                worksheet.Cell(row, 7).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                            }
+
+                            void RellenarFilaComparacion(IXLWorksheet worksheet, int row, decimal valorSistema, decimal limiteTolerancia)
+                            {
+                                var cellCashea = worksheet.Cell(row, 4);
+                                decimal valorCashea = 0;
+                                string valStr = cellCashea.Value.ToString();
+                                if (!string.IsNullOrWhiteSpace(valStr))
+                                {
+                                    valStr = valStr.Replace(",", ".");
+                                    valStr = System.Text.RegularExpressions.Regex.Replace(valStr, @"[^\d\.\-]", "");
+                                    decimal.TryParse(valStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out valorCashea);
+                                }
+
+                                var cellSistema = worksheet.Cell(row, 5);
+                                cellSistema.Value = valorSistema;
+                                cellSistema.Style.NumberFormat.Format = "$#,##0.00";
+                                cellSistema.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                                cellSistema.Style.Font.FontColor = XLColor.FromHtml("#294B73");
+
+                                var cellDiff = worksheet.Cell(row, 6);
+                                cellDiff.FormulaA1 = $"=D{row}-E{row}";
+                                cellDiff.Style.NumberFormat.Format = "$#,##0.00";
+                                cellDiff.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+
+                                var cellEstado = worksheet.Cell(row, 7);
+                                cellEstado.FormulaA1 = $"=IF(ABS(F{row})<={limiteTolerancia.ToString(System.Globalization.CultureInfo.InvariantCulture)}, \"✔️ Coincide\", \"❌ Discrepancia\")";
+                                cellEstado.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                                cellEstado.Style.Font.Bold = true;
+
+                                decimal diff = Math.Abs(valorCashea - valorSistema);
+                                if (diff <= limiteTolerancia)
+                                {
+                                    cellEstado.Style.Fill.BackgroundColor = XLColor.FromHtml("#D4EFDF");
+                                    cellEstado.Style.Font.FontColor = XLColor.FromHtml("#196F3D");
+                                }
+                                else
+                                {
+                                    cellEstado.Style.Fill.BackgroundColor = XLColor.FromHtml("#FADBD8");
+                                    cellEstado.Style.Font.FontColor = XLColor.FromHtml("#7B241C");
+                                }
+                            }
+
                             if (loadedFromTemplate && workbook.Worksheets.Contains("Reporte Mensual"))
                             {
                                 var ws = workbook.Worksheet("Reporte Mensual");
                                 ws.Cell("B8").Value = $"Período: Del {desde:dd/MM/yyyy} Hasta {hasta:dd/MM/yyyy}";
-                                ws.Cell("D34").Value = ventasTotales;
-                                ws.Cell("D35").Value = pagadoCaja;
-                                ws.Cell("D36").Value = ventasTotales - pagadoCaja; // Monto Financiado
-                                ws.Cell("D37").Value = (ventasTotales > 0) ? ((ventasTotales - pagadoCaja) / ventasTotales) : 0;
 
                                 // Quitar filas de "Servicios Tecnológicos" (filas 39 a 45 en la plantilla original)
                                 ws.Rows(39, 45).Delete();
 
-                                // Tras eliminar 7 filas, la tabla de Banco se desplaza hacia arriba:
-                                // La celda D58 original ahora es D51, etc.
-                                ws.Cell("D51").Value = coverRecibidoBancoUsd;
-                                ws.Cell("D52").Value = coverCuotasAdelantadasUsd;
-                                ws.Cell("D53").Value = coverPagoInicialAppUsd;
-                                ws.Cell("D54").Value = 0;
-                                ws.Cell("D55").Value = 0;
-                                ws.Cell("D56").Value = coverBancoNetoUsd;
+                                // Rellenar cabeceras y filas de comparación lado a lado
+                                EscribirCabeceras(ws, 32); // Cabecera Ventas
+                                EscribirCabeceras(ws, 49); // Cabecera Resumen de Banco (shifted by -7)
+                                EscribirCabeceras(ws, 58); // Cabecera Cuentas por Cobrar (shifted by -7)
+                                EscribirCabeceras(ws, 65); // Cabecera Conciliación (shifted by -7)
 
-                                ws.Cell("D60").Value = pendienteUsd;
-                                ws.Cell("D62").Value = pendienteUsd;
+                                // 1. Sección Ventas
+                                RellenarFilaComparacion(ws, 34, ventasTotales, 5.00m); // Ventas Totales
+                                RellenarFilaComparacion(ws, 35, pagadoCaja, 5.00m);    // Pagado en Caja
+                                RellenarFilaComparacion(ws, 36, ventasTotales - pagadoCaja, 5.00m);    // Monto Financiado
 
-                                ws.Cell("D66").Value = coverBancoNetoUsd;
-                                ws.Cell("D67").Value = pendienteUsd;
-                                ws.Cell("D68").Value = coverBancoNetoUsd - pendienteUsd;
+                                // 2. Sección Resumen de Banco
+                                RellenarFilaComparacion(ws, 51, coverRecibidoBancoUsd, 85.00m);      // Recibido en Banco
+                                RellenarFilaComparacion(ws, 52, coverCuotasAdelantadasUsd, 85.00m);  // Cuotas Adelantadas
+                                RellenarFilaComparacion(ws, 53, coverPagoInicialAppUsd, 85.00m);     // Pago Inicial App
+                                RellenarFilaComparacion(ws, 56, coverBancoNetoUsd, 85.00m);          // Banco Neto
+
+                                // 3. Sección Cuentas por Cobrar
+                                RellenarFilaComparacion(ws, 60, pendienteUsd, 85.00m);   // Cuentas por Cobrar
+
+                                // 4. Sección Conciliación
+                                RellenarFilaComparacion(ws, 66, coverBancoNetoUsd, 85.00m);          // Banco Neto
+                                RellenarFilaComparacion(ws, 67, pendienteUsd, 85.00m);   // Cuentas por Cobrar Neto
+                                RellenarFilaComparacion(ws, 68, coverBancoNetoUsd - pendienteUsd, 85.00m); // Diferencia Neto (Banco - CxC)
+
+                                // Escribir Nota de Auditoría al final de la Hoja 1
+                                // Escribir Nota de Auditoria al final de la Hoja 1
+                                int noteStartRow = 80;
+                                ws.Cell(noteStartRow, 2).Value = "NOTAS DE AUDITORIA Y CONCILIACION (SurtidorADM)";
+                                ws.Cell(noteStartRow, 2).Style.Font.Bold = true;
+                                ws.Cell(noteStartRow, 2).Style.Font.FontSize = 11;
+                                ws.Cell(noteStartRow, 2).Style.Fill.BackgroundColor = XLColor.FromHtml("#112A46");
+                                ws.Cell(noteStartRow, 2).Style.Font.FontColor = XLColor.White;
+                                ws.Range($"B{noteStartRow}:G{noteStartRow}").Merge();
+
+                                // Explicacion Estructural
+                                ws.Cell(noteStartRow + 2, 2).Value = "1. Diferencias Estructurales de Conciliacion:";
+                                ws.Cell(noteStartRow + 2, 2).Style.Font.Bold = true;
+                                ws.Cell(noteStartRow + 2, 2).Style.Font.FontSize = 10;
+                                ws.Cell(noteStartRow + 2, 2).Style.Font.FontColor = XLColor.FromHtml("#294B73");
+
+                                string explicacionEstructural = 
+                                    "- Criterio de Prorrateo de Adelantadas:\n" +
+                                    "  SurtidorADM asigna el cobro completo de cuotas al renglon 'Adelantadas' segun el vencimiento final " +
+                                    "  de la cuota pagada, mientras que Cashea prorratea la porcion correspondiente al mes actual. Esto genera " +
+                                    "  una diferencia cruzada en ambos renglones, pero la sumatoria neta final coincide matematicamente " +
+                                    "  (el dinero ingresado a la cuenta bancaria Banesco esta completo).\n\n" +
+                                    "- Diferencias de Transicion de Fin de Mes:\n" +
+                                    "  Ocurre cuando Cashea liquida un lote al final del mes pero el banco lo acredita en los primeros dias " +
+                                    "  del mes siguiente. Estos montos en transito se auto-compensan en el reporte del mes siguiente.";
+
+                                ws.Cell(noteStartRow + 3, 2).Value = explicacionEstructural;
+                                ws.Cell(noteStartRow + 3, 2).Style.Alignment.WrapText = true;
+                                ws.Cell(noteStartRow + 3, 2).Style.Font.FontSize = 9;
+                                ws.Cell(noteStartRow + 3, 2).Style.Alignment.Vertical = XLAlignmentVerticalValues.Top;
+                                ws.Range($"B{noteStartRow + 3}:G{noteStartRow + 7}").Merge();
+                                ws.Row(noteStartRow + 3).Height = 85;
+
+                                // Explicacion Dinamica de Discrepancias
+                                ws.Cell(noteStartRow + 9, 2).Value = "2. Desglose de Discrepancias Detectadas en este Periodo:";
+                                ws.Cell(noteStartRow + 9, 2).Style.Font.Bold = true;
+                                ws.Cell(noteStartRow + 9, 2).Style.Font.FontSize = 10;
+                                ws.Cell(noteStartRow + 9, 2).Style.Font.FontColor = XLColor.FromHtml("#294B73");
+
+                                var diferencias = SessionState.LastDetallesDiferencias ?? new List<DetalleDiferencia>();
+                                int tBcvCount = diferencias.Count(d => d.TipoError == "Diferencia de Tasa BCV");
+                                decimal tBcvSum = diferencias.Where(d => d.TipoError == "Diferencia de Tasa BCV").Sum(d => ParseDecimal(d.ImpactoUsd));
+
+                                int fBancoCount = diferencias.Count(d => d.TipoError == "Falta en Banco");
+                                decimal fBancoSum = diferencias.Where(d => d.TipoError == "Falta en Banco").Sum(d => ParseDecimal(d.ImpactoUsd));
+
+                                int fLotesCount = diferencias.Count(d => d.TipoError == "Falta en Lotes Cashea");
+                                decimal fLotesSum = diferencias.Where(d => d.TipoError == "Falta en Lotes Cashea").Sum(d => ParseDecimal(d.ImpactoUsd));
+
+                                int descCount = diferencias.Count(d => d.TipoError == "Descuadre de Deposito");
+                                decimal descSum = diferencias.Where(d => d.TipoError == "Descuadre de Deposito").Sum(d => ParseDecimal(d.ImpactoUsd));
+
+                                string desgloseDinamico = 
+                                    $"- Diferencia de Tasa BCV: {tBcvCount} casos detectados (Impacto neto: {tBcvSum:N2} USD).\n" +
+                                    "  (Cashea aplico un tipo de cambio diferente a la tasa oficial BCV del dia de la transaccion).\n\n" +
+                                    $"- Lote Pendiente/Falta en Banco: {fBancoCount} casos detectados (Impacto neto: {fBancoSum:N2} USD).\n" +
+                                    "  (Lotes que segun Cashea se pagaron pero no se encontraron depositados en la cuenta Banesco).\n\n" +
+                                    $"- Deposito Huerfano/Falta en Lotes: {fLotesCount} casos detectados (Impacto neto: {fLotesSum:N2} USD).\n" +
+                                    "  (Abonos de Cashea recibidos en Banesco que no figuran en los archivos de lotes mensuales de Cashea).\n\n" +
+                                    $"- Descuadre de Deposito: {descCount} casos detectados (Impacto neto: {descSum:N2} USD).\n" +
+                                    "  (El monto en bolivares depositado en el banco difiere del reportado en la liquidacion de Cashea).";
+
+                                ws.Cell(noteStartRow + 10, 2).Value = desgloseDinamico;
+                                ws.Cell(noteStartRow + 10, 2).Style.Alignment.WrapText = true;
+                                ws.Cell(noteStartRow + 10, 2).Style.Font.FontSize = 9;
+                                ws.Cell(noteStartRow + 10, 2).Style.Alignment.Vertical = XLAlignmentVerticalValues.Top;
+                                ws.Range($"B{noteStartRow + 10}:G{noteStartRow + 17}").Merge();
+                                ws.Row(noteStartRow + 10).Height = 135;
 
                                 InyectarLogo(ws);
                             }
                             else
                             {
                                 var ws = workbook.Worksheets.Add("Reporte Mensual");
-                                ws.Cell("B2").Value = "Reporte Mensual de Conciliación";
-                                ws.Cell("B3").Value = $"Período: Del {desde:dd/MM/yyyy} Hasta {hasta:dd/MM/yyyy}";
-                                ws.Cell("B5").Value = "Ventas Totales:";
-                                ws.Cell("C5").Value = ventasTotales;
-                                ws.Cell("B6").Value = "Pagado en Caja:";
-                                ws.Cell("C6").Value = pagadoCaja;
-                                ws.Cell("B7").Value = "Monto Financiado:";
-                                ws.Cell("C7").Value = ventasTotales - pagadoCaja;
-                                ws.Cell("B8").Value = "Recibido en Banco (USD Equiv):";
-                                ws.Cell("C8").Value = coverRecibidoBancoUsd;
-                                ws.Cell("B9").Value = "Pendiente por Cobrar (USD):";
-                                ws.Cell("C9").Value = pendienteUsd;
-                                ws.Columns().AdjustToContents();
+                                InyectarEstiloCabecera(ws, "Reporte Mensual de Conciliación", desde, hasta);
 
+                                // Crear tabla de comparación desde cero
+                                ws.Cell("B6").Value = "Concepto Financiero";
+                                ws.Cell("B6").Style.Font.Bold = true;
+                                ws.Cell("B6").Style.Fill.BackgroundColor = XLColor.FromHtml("#112A46");
+                                ws.Cell("B6").Style.Font.FontColor = XLColor.White;
+
+                                ws.Cell("C6").Value = "Monto Cashea (Reporte)";
+                                ws.Cell("C6").Style.Font.Bold = true;
+                                ws.Cell("C6").Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                                ws.Cell("C6").Style.Fill.BackgroundColor = XLColor.FromHtml("#112A46");
+                                ws.Cell("C6").Style.Font.FontColor = XLColor.White;
+
+                                ws.Cell("D6").Value = "Monto Sistema (DB)";
+                                ws.Cell("D6").Style.Font.Bold = true;
+                                ws.Cell("D6").Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                                ws.Cell("D6").Style.Fill.BackgroundColor = XLColor.FromHtml("#112A46");
+                                ws.Cell("D6").Style.Font.FontColor = XLColor.White;
+
+                                ws.Cell("E6").Value = "Diferencia";
+                                ws.Cell("E6").Style.Font.Bold = true;
+                                ws.Cell("E6").Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                                ws.Cell("E6").Style.Fill.BackgroundColor = XLColor.FromHtml("#112A46");
+                                ws.Cell("E6").Style.Font.FontColor = XLColor.White;
+
+                                ws.Cell("F6").Value = "Estado";
+                                ws.Cell("F6").Style.Font.Bold = true;
+                                ws.Cell("F6").Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                                ws.Cell("F6").Style.Fill.BackgroundColor = XLColor.FromHtml("#112A46");
+                                ws.Cell("F6").Style.Font.FontColor = XLColor.White;
+
+                                int startRow = 7;
+                                void AgregarFilaConcepto(string concepto, decimal valorCashea, decimal valorSistema, decimal limiteTolerancia)
+                                {
+                                    ws.Cell(startRow, 2).Value = concepto;
+                                    ws.Cell(startRow, 2).Style.Font.Bold = true;
+
+                                    ws.Cell(startRow, 3).Value = valorCashea;
+                                    ws.Cell(startRow, 3).Style.NumberFormat.Format = "$#,##0.00";
+
+                                    ws.Cell(startRow, 4).Value = valorSistema;
+                                    ws.Cell(startRow, 4).Style.NumberFormat.Format = "$#,##0.00";
+                                    ws.Cell(startRow, 4).Style.Font.FontColor = XLColor.FromHtml("#294B73");
+
+                                    ws.Cell(startRow, 5).FormulaA1 = $"=C{startRow}-D{startRow}";
+                                    ws.Cell(startRow, 5).Style.NumberFormat.Format = "$#,##0.00";
+
+                                    var cellEst = ws.Cell(startRow, 6);
+                                    cellEst.FormulaA1 = $"=IF(ABS(E{startRow})<={limiteTolerancia.ToString(System.Globalization.CultureInfo.InvariantCulture)}, \"✔️ Coincide\", \"❌ Discrepancia\")";
+                                    cellEst.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                                    cellEst.Style.Font.Bold = true;
+
+                                    decimal diff = Math.Abs(valorCashea - valorSistema);
+                                    if (diff <= limiteTolerancia)
+                                    {
+                                        cellEst.Style.Fill.BackgroundColor = XLColor.FromHtml("#D4EFDF");
+                                        cellEst.Style.Font.FontColor = XLColor.FromHtml("#196F3D");
+                                    }
+                                    else
+                                    {
+                                        cellEst.Style.Fill.BackgroundColor = XLColor.FromHtml("#FADBD8");
+                                        cellEst.Style.Font.FontColor = XLColor.FromHtml("#7B241C");
+                                    }
+                                    startRow++;
+                                }
+
+                                var c = SessionState.LastDatosCashea;
+                                decimal cVentas = c != null ? c.VentasTotales : 0;
+                                decimal cCaja = c != null ? c.PagadoCaja : 0;
+                                decimal cFinan = c != null ? c.MontoFinanciado : 0;
+                                decimal cRecBanco = c != null ? c.RecibidoBanco : 0;
+                                decimal cAdel = c != null ? c.CuotasAdelantadas : 0;
+                                decimal cIniApp = c != null ? c.PagoInicialApp : 0;
+                                decimal cBNeto = c != null ? c.BancoNeto : 0;
+                                decimal cCxC = c != null ? c.CuentasPorCobrar : 0;
+
+                                AgregarFilaConcepto("Ventas Totales", cVentas, ventasTotales, 5.00m);
+                                AgregarFilaConcepto("Pago en Caja (Inicial)", cCaja, pagadoCaja, 5.00m);
+                                AgregarFilaConcepto("Monto Financiado", cFinan, ventasTotales - pagadoCaja, 5.00m);
+                                AgregarFilaConcepto("Recibido en Banco (Bruto)", cRecBanco, coverRecibidoBancoUsd, 85.00m);
+                                AgregarFilaConcepto("Cuotas Adelantadas de Clientes", cAdel, coverCuotasAdelantadasUsd, 85.00m);
+                                AgregarFilaConcepto("Pago Inicial de Clientes en App", cIniApp, coverPagoInicialAppUsd, 85.00m);
+                                AgregarFilaConcepto("Banco Neto (Cuotas Reconocidas)", cBNeto, coverBancoNetoUsd, 85.00m);
+                                AgregarFilaConcepto("Cuentas por Cobrar (Deuda Vencida)", cCxC, pendienteUsd, 85.00m);
+
+                                // Escribir Nota de Auditoría en la hoja creada desde cero
+                                // Escribir Nota de Auditoria en la hoja creada desde cero
+                                 int noteStartRow = startRow + 2;
+                                 ws.Cell(noteStartRow, 2).Value = "NOTAS DE AUDITORIA Y CONCILIACION (SurtidorADM)";
+                                 ws.Cell(noteStartRow, 2).Style.Font.Bold = true;
+                                 ws.Cell(noteStartRow, 2).Style.Font.FontSize = 11;
+                                 ws.Cell(noteStartRow, 2).Style.Fill.BackgroundColor = XLColor.FromHtml("#112A46");
+                                 ws.Cell(noteStartRow, 2).Style.Font.FontColor = XLColor.White;
+                                 ws.Range($"B{noteStartRow}:F{noteStartRow}").Merge();
+
+                                 // Explicacion Estructural
+                                 ws.Cell(noteStartRow + 2, 2).Value = "1. Diferencias Estructurales de Conciliacion:";
+                                 ws.Cell(noteStartRow + 2, 2).Style.Font.Bold = true;
+                                 ws.Cell(noteStartRow + 2, 2).Style.Font.FontSize = 10;
+                                 ws.Cell(noteStartRow + 2, 2).Style.Font.FontColor = XLColor.FromHtml("#294B73");
+
+                                 string explicacionEstructural = 
+                                     "- Criterio de Prorrateo de Adelantadas:\n" +
+                                     "  SurtidorADM asigna el cobro completo de cuotas al renglon 'Adelantadas' segun el vencimiento final " +
+                                     "  de la cuota pagada, mientras que Cashea prorratea la porcion correspondiente al mes actual. Esto genera " +
+                                     "  una diferencia cruzada en ambos renglones, pero la sumatoria neta final coincide matematicamente " +
+                                     "  (el dinero ingresado a la cuenta bancaria Banesco esta completo).\n\n" +
+                                     "- Diferencias de Transicion de Fin de Mes:\n" +
+                                     "  Ocurre cuando Cashea liquida un lote al final del mes pero el banco lo acredita en los primeros dias " +
+                                     "  del mes siguiente. Estos montos en transito se auto-compensan en el reporte del mes siguiente.";
+
+                                 ws.Cell(noteStartRow + 3, 2).Value = explicacionEstructural;
+                                 ws.Cell(noteStartRow + 3, 2).Style.Alignment.WrapText = true;
+                                 ws.Cell(noteStartRow + 3, 2).Style.Font.FontSize = 9;
+                                 ws.Cell(noteStartRow + 3, 2).Style.Alignment.Vertical = XLAlignmentVerticalValues.Top;
+                                 ws.Range($"B{noteStartRow + 3}:F{noteStartRow + 7}").Merge();
+                                 ws.Row(noteStartRow + 3).Height = 85;
+
+                                 // Explicacion Dinamica de Discrepancias
+                                 ws.Cell(noteStartRow + 9, 2).Value = "2. Desglose de Discrepancias Detectadas en este Periodo:";
+                                 ws.Cell(noteStartRow + 9, 2).Style.Font.Bold = true;
+                                 ws.Cell(noteStartRow + 9, 2).Style.Font.FontSize = 10;
+                                 ws.Cell(noteStartRow + 9, 2).Style.Font.FontColor = XLColor.FromHtml("#294B73");
+
+                                 var diferencias = SessionState.LastDetallesDiferencias ?? new List<DetalleDiferencia>();
+                                 int tBcvCount = diferencias.Count(d => d.TipoError == "Diferencia de Tasa BCV");
+                                 decimal tBcvSum = diferencias.Where(d => d.TipoError == "Diferencia de Tasa BCV").Sum(d => ParseDecimal(d.ImpactoUsd));
+
+                                 int fBancoCount = diferencias.Count(d => d.TipoError == "Falta en Banco");
+                                 decimal fBancoSum = diferencias.Where(d => d.TipoError == "Falta en Banco").Sum(d => ParseDecimal(d.ImpactoUsd));
+
+                                 int fLotesCount = diferencias.Count(d => d.TipoError == "Falta en Lotes Cashea");
+                                 decimal fLotesSum = diferencias.Where(d => d.TipoError == "Falta en Lotes Cashea").Sum(d => ParseDecimal(d.ImpactoUsd));
+
+                                 int descCount = diferencias.Count(d => d.TipoError == "Descuadre de Deposito");
+                                 decimal descSum = diferencias.Where(d => d.TipoError == "Descuadre de Deposito").Sum(d => ParseDecimal(d.ImpactoUsd));
+
+                                 string desgloseDinamico = 
+                                     $"- Diferencia de Tasa BCV: {tBcvCount} casos detectados (Impacto neto: {tBcvSum:N2} USD).\n" +
+                                     "  (Cashea aplico un tipo de cambio diferente a la tasa oficial BCV del dia de la transaccion).\n\n" +
+                                     $"- Lote Pendiente/Falta en Banco: {fBancoCount} casos detectados (Impacto neto: {fBancoSum:N2} USD).\n" +
+                                     "  (Lotes que segun Cashea se pagaron pero no se encontraron depositados en la cuenta Banesco).\n\n" +
+                                     $"- Deposito Huerfano/Falta en Lotes: {fLotesCount} casos detectados (Impacto neto: {fLotesSum:N2} USD).\n" +
+                                     "  (Abonos de Cashea recibidos en Banesco que no figuran en los archivos de lotes mensuales de Cashea).\n\n" +
+                                     $"- Descuadre de Deposito: {descCount} casos detectados (Impacto neto: {descSum:N2} USD).\n" +
+                                     "  (El monto en bolivares depositado en el banco difiere del reportado en la liquidacion de Cashea).";
+
+                                 ws.Cell(noteStartRow + 10, 2).Value = desgloseDinamico;
+                                 ws.Cell(noteStartRow + 10, 2).Style.Alignment.WrapText = true;
+                                 ws.Cell(noteStartRow + 10, 2).Style.Font.FontSize = 9;
+                                 ws.Cell(noteStartRow + 10, 2).Style.Alignment.Vertical = XLAlignmentVerticalValues.Top;
+                                 ws.Range($"B{noteStartRow + 10}:F{noteStartRow + 17}").Merge();
+                                 ws.Row(noteStartRow + 10).Height = 135;
+
+                                 ws.Columns().AdjustToContents();
                                 InyectarLogo(ws);
                             }
                         }
@@ -437,7 +737,7 @@ namespace SurtidorADM.Views
                                 workbook.Worksheets.Delete("Reporte Mensual");
                         }
 
-                        // 5. Modificar Hoja 2: Ajustes
+                        // 5. Modificar Hoja 2: Ajustes (Detalle de Discrepancias Contables)
                         if (chkAjustes.Dispatcher.Invoke(() => chkAjustes.IsChecked) == true)
                         {
                             if (loadedFromTemplate && workbook.Worksheets.Contains("Ajustes"))
@@ -452,6 +752,49 @@ namespace SurtidorADM.Views
                                     ws.Rows(10, lastRow).Delete();
                                 }
 
+                                // Escribir cabecera en fila 10
+                                ws.Cell("B10").Value = "Referencia";
+                                ws.Cell("B10").Style.Font.Bold = true;
+                                ws.Cell("B10").Style.Fill.BackgroundColor = XLColor.FromHtml("#112A46");
+                                ws.Cell("B10").Style.Font.FontColor = XLColor.White;
+
+                                ws.Cell("C10").Value = "Fecha";
+                                ws.Cell("C10").Style.Font.Bold = true;
+                                ws.Cell("C10").Style.Fill.BackgroundColor = XLColor.FromHtml("#112A46");
+                                ws.Cell("C10").Style.Font.FontColor = XLColor.White;
+
+                                ws.Cell("D10").Value = "Tipo de Discrepancia";
+                                ws.Cell("D10").Style.Font.Bold = true;
+                                ws.Cell("D10").Style.Fill.BackgroundColor = XLColor.FromHtml("#112A46");
+                                ws.Cell("D10").Style.Font.FontColor = XLColor.White;
+
+                                ws.Cell("E10").Value = "Detalle del Error";
+                                ws.Cell("E10").Style.Font.Bold = true;
+                                ws.Cell("E10").Style.Fill.BackgroundColor = XLColor.FromHtml("#112A46");
+                                ws.Cell("E10").Style.Font.FontColor = XLColor.White;
+
+                                ws.Cell("F10").Value = "Impacto (USD)";
+                                ws.Cell("F10").Style.Font.Bold = true;
+                                ws.Cell("F10").Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                                ws.Cell("F10").Style.Fill.BackgroundColor = XLColor.FromHtml("#112A46");
+                                ws.Cell("F10").Style.Font.FontColor = XLColor.White;
+
+                                int adjRow = 11;
+                                var diferencias = SessionState.LastDetallesDiferencias;
+                                if (diferencias != null)
+                                {
+                                    foreach (var diff in diferencias)
+                                    {
+                                        ws.Cell(adjRow, 2).Value = diff.Referencia;
+                                        ws.Cell(adjRow, 3).Value = diff.Fecha;
+                                        ws.Cell(adjRow, 4).Value = diff.TipoError;
+                                        ws.Cell(adjRow, 5).Value = diff.Detalle;
+                                        ws.Cell(adjRow, 6).Value = diff.ImpactoUsd;
+                                        ws.Cell(adjRow, 6).Style.NumberFormat.Format = "$#,##0.00";
+                                        adjRow++;
+                                    }
+                                }
+                                ws.Columns().AdjustToContents();
                                 InyectarLogo(ws);
                             }
                             else
@@ -459,8 +802,34 @@ namespace SurtidorADM.Views
                                 var ws = workbook.Worksheets.Add("Ajustes");
                                 ws.Cell("A1").Value = "Ajustes y Órdenes Especiales";
                                 ws.Cell("A2").Value = $"Período: Del {desde:dd/MM/yyyy} Hasta {hasta:dd/MM/yyyy}";
-                                ws.Columns().AdjustToContents();
+                                
+                                ws.Cell("B5").Value = "Referencia";
+                                ws.Cell("B5").Style.Font.Bold = true;
+                                ws.Cell("C5").Value = "Fecha";
+                                ws.Cell("C5").Style.Font.Bold = true;
+                                ws.Cell("D5").Value = "Tipo de Discrepancia";
+                                ws.Cell("D5").Style.Font.Bold = true;
+                                ws.Cell("E5").Value = "Detalle";
+                                ws.Cell("E5").Style.Font.Bold = true;
+                                ws.Cell("F5").Value = "Impacto (USD)";
+                                ws.Cell("F5").Style.Font.Bold = true;
 
+                                int adjRow = 6;
+                                var diferencias = SessionState.LastDetallesDiferencias;
+                                if (diferencias != null)
+                                {
+                                    foreach (var diff in diferencias)
+                                    {
+                                        ws.Cell(adjRow, 2).Value = diff.Referencia;
+                                        ws.Cell(adjRow, 3).Value = diff.Fecha;
+                                        ws.Cell(adjRow, 4).Value = diff.TipoError;
+                                        ws.Cell(adjRow, 5).Value = diff.Detalle;
+                                        ws.Cell(adjRow, 6).Value = diff.ImpactoUsd;
+                                        ws.Cell(adjRow, 6).Style.NumberFormat.Format = "$#,##0.00";
+                                        adjRow++;
+                                    }
+                                }
+                                ws.Columns().AdjustToContents();
                                 InyectarLogo(ws);
                             }
                         }
@@ -538,7 +907,7 @@ namespace SurtidorADM.Views
                             
                             InyectarEstiloCabecera(ws, "Reporte Detallado de Banco", desde, hasta);
 
-                            // Filtrar movimientos bancarios y mapearlos a sus órdenes
+                            // Filtrar movimientos bancarios y mapearlos a sus ordenes
                             var movimientos = banco
                                 .Where(m => m.Fecha >= fechaDesde && m.Fecha <= fechaHasta)
                                 .OrderBy(m => m.Fecha)

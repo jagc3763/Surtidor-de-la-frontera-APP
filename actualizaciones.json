@@ -1,5 +1,5 @@
 {
-  "Version": "1.0.8",
-  "UrlDescarga": "https://github.com/jagc3763/Surtidor-de-la-frontera-APP/releases/download/v1.0.8/SurtidorADM.exe",
-  "Novedades": "• Auto-compilación y lanzamiento oficial de la versión 1.0.8."
+  "Version": "1.1.0",
+  "UrlDescarga": "https://github.com/jagc3763/Surtidor-de-la-frontera-APP/releases/download/v1.1.0/SurtidorADM.exe",
+  "Novedades": "• Reportes: Explicacion dinamica de diferencias en la conciliacion (Prorrateo, BCV, transito).\\n• IA Chat: Optimizacion de contexto con resumenes y modelo gemini-3.5-flash.\\n• UX: Seleccion y copiado de texto en chat y celdas individuales."
 }
