@@ -50,7 +50,7 @@ namespace SurtidorADM.Services
             }
         }
 
-        public async Task<string> ResponderPreguntaAsync(string pregunta, string contextoAdicional = "")
+        public async Task<string> ResponderPreguntaAsync(List<ItemMensajeChat> historial, string contextoAdicional = "")
         {
             string apiKey = ObtenerApiKey();
             if (string.IsNullOrWhiteSpace(apiKey))
@@ -58,8 +58,17 @@ namespace SurtidorADM.Services
                 return "⚠️ Por favor, ingresa y guarda tu API Key de Google Gemini en la sección superior antes de iniciar el chat.";
             }
 
+            if (historial == null || !historial.Any())
+            {
+                return "No hay mensajes en el historial.";
+            }
+
             try
             {
+                // Obtener la última pregunta del usuario
+                var ultimoMensajeUsuario = historial.LastOrDefault(m => m.EsUsuario);
+                string pregunta = ultimoMensajeUsuario?.Contenido ?? string.Empty;
+
                 // 1. Compilar el contexto contable de la base de datos
                 string contexto = await CompilarContextoLocalAsync(pregunta);
                 if (!string.IsNullOrEmpty(contextoAdicional))
@@ -67,7 +76,7 @@ namespace SurtidorADM.Services
                     contexto += "\n\n" + contextoAdicional;
                 }
 
-                // 2. Definir instrucciones del sistema y prompt final
+                // 2. Definir instrucciones del sistema
                 string systemInstructions = 
                     "Eres el Asistente IA Contable de 'El Surtidor de la Frontera, C.A.'. " +
                     "Tu única función es responder preguntas sobre los datos de conciliación de la empresa (ventas, pagos, tasas cambiarias y banco) " +
@@ -77,20 +86,41 @@ namespace SurtidorADM.Services
                     "\"Disculpa, como tu asistente de conciliación de El Surtidor de la Frontera, mi función está limitada únicamente a responder dudas sobre los datos contables de la aplicación. No poseo información relacionada con otros temas.\"\n\n" +
                     "Sé siempre profesional, educado, conciso y responde en español. Muestra montos con formato de moneda.";
 
+                // 3. Reconstruir los turnos de la conversación (historial) para pasárselo a Gemini
+                var contents = new List<object>();
+                for (int i = 0; i < historial.Count; i++)
+                {
+                    var msg = historial[i];
+                    string role = msg.EsUsuario ? "user" : "model";
+                    string text = msg.Contenido;
+
+                    // Si es el último turno (el mensaje actual del usuario), le inyectamos la base de conocimientos y los datos de pantalla
+                    if (i == historial.Count - 1 && msg.EsUsuario)
+                    {
+                        text = $"[CONTEXTO DE LA BASE DE DATOS LOCAL Y PANTALLA]\n{contexto}\n\n[PREGUNTA DEL USUARIO]\n{text}";
+                    }
+
+                    contents.Add(new
+                    {
+                        role = role,
+                        parts = new[]
+                        {
+                            new { text = text }
+                        }
+                    });
+                }
+
                 // Formatear payload para la API de Gemini (API v1beta)
                 var requestBody = new
                 {
-                    contents = new[]
+                    systemInstruction = new
                     {
-                        new
+                        parts = new[]
                         {
-                            role = "user",
-                            parts = new[]
-                            {
-                                new { text = $"[INSTRUCCIONES DEL SISTEMA]\n{systemInstructions}\n\n[CONTEXTO DE LA BASE DE DATOS LOCAL]\n{contexto}\n\n[PREGUNTA DEL USUARIO]\n{pregunta}" }
-                            }
+                            new { text = systemInstructions }
                         }
                     },
+                    contents = contents.ToArray(),
                     generationConfig = new
                     {
                         temperature = 0.2,

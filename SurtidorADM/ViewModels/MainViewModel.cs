@@ -477,15 +477,16 @@ namespace SurtidorADM.ViewModels
                     {
                         var fechaDesde = datosCashea.FechaDesde;
                         var fechaHasta = datosCashea.FechaHasta;
+                        var fechaHastaMasUno = fechaHasta.AddDays(1);
 
                         // 1. Obtener ventas en el rango
                         var ventas = await context.VentasIndividualesCashea
-                            .Where(v => v.FechaCompra >= fechaDesde && v.FechaCompra <= fechaHasta)
+                            .Where(v => v.FechaCompra >= fechaDesde && v.FechaCompra < fechaHastaMasUno)
                             .ToListAsync();
 
                         var todasVentas = await context.VentasIndividualesCashea.ToListAsync();
-                        var todosPagos = await context.PagosLiquidacionesCashea.Where(p => p.FechaLiquidacion <= fechaHasta).ToListAsync();
-                        var banco = await context.MovimientosBancarios.Where(m => m.Fecha <= fechaHasta).ToListAsync();
+                        var todosPagos = await context.PagosLiquidacionesCashea.Where(p => p.FechaLiquidacion < fechaHastaMasUno).ToListAsync();
+                        var banco = await context.MovimientosBancarios.Where(m => m.Fecha < fechaHastaMasUno).ToListAsync();
                         var historicoTasas = await context.TasasDiarias.ToListAsync();
 
                         decimal ventasTotalesSystem = ventas.Sum(v => v.VentaTotalUsd);
@@ -499,7 +500,7 @@ namespace SurtidorADM.ViewModels
 
                         DetallesDiferencias.Clear();
 
-                        var bancoEnPeriodo = banco.Where(m => m.Fecha >= fechaDesde && m.Fecha <= fechaHasta).ToList();
+                        var bancoEnPeriodo = banco.Where(m => m.Fecha >= fechaDesde && m.Fecha < fechaHastaMasUno).ToList();
                         foreach (var m in bancoEnPeriodo)
                         {
                             var refBanco = (m.ReferenciaBanco ?? "").Trim();
@@ -581,7 +582,7 @@ namespace SurtidorADM.ViewModels
                         }
 
                         // Check 3: Transacciones del Lote Cashea que faltan en el Banco Banesco
-                        var pagosEnPeriodo = todosPagos.Where(p => p.FechaLiquidacion >= fechaDesde && p.FechaLiquidacion <= fechaHasta).ToList();
+                        var pagosEnPeriodo = todosPagos.Where(p => p.FechaLiquidacion >= fechaDesde && p.FechaLiquidacion < fechaHastaMasUno).ToList();
                         foreach (var p in pagosEnPeriodo)
                         {
                             var mMatch = banco.FirstOrDefault(mb => mb.ReferenciaBanco != null && mb.ReferenciaBanco.Trim() == p.ReferenciaBancaria.Trim());
@@ -635,15 +636,15 @@ namespace SurtidorADM.ViewModels
                         decimal cuentasPorCobrarSystem = 0;
                         foreach (var venta in todasVentas)
                         {
-                            if (venta.FechaCuota1.HasValue && venta.FechaCuota1.Value >= fechaDesde && venta.FechaCuota1.Value <= fechaHasta)
+                            if (venta.FechaCuota1.HasValue && venta.FechaCuota1.Value >= fechaDesde && venta.FechaCuota1.Value < fechaHastaMasUno)
                             {
                                 cuentasPorCobrarSystem += venta.MontoCuota1;
                             }
-                            if (venta.FechaCuota2.HasValue && venta.FechaCuota2.Value >= fechaDesde && venta.FechaCuota2.Value <= fechaHasta)
+                            if (venta.FechaCuota2.HasValue && venta.FechaCuota2.Value >= fechaDesde && venta.FechaCuota2.Value < fechaHastaMasUno)
                             {
                                 cuentasPorCobrarSystem += venta.MontoCuota2;
                             }
-                            if (venta.FechaCuota3.HasValue && venta.FechaCuota3.Value >= fechaDesde && venta.FechaCuota3.Value <= fechaHasta)
+                            if (venta.FechaCuota3.HasValue && venta.FechaCuota3.Value >= fechaDesde && venta.FechaCuota3.Value < fechaHastaMasUno)
                             {
                                 cuentasPorCobrarSystem += venta.MontoCuota3;
                             }
@@ -786,7 +787,7 @@ namespace SurtidorADM.ViewModels
                 }
 
                 // Llamado asíncrono a la IA enviándole el contexto de la base de datos + datos de la sesión actual
-                string respuestaIa = await _geminiChatService.ResponderPreguntaAsync(userMsg, sbContexto.ToString());
+                string respuestaIa = await _geminiChatService.ResponderPreguntaAsync(MensajesChat.ToList(), sbContexto.ToString());
                 
                 // Agregar respuesta de la IA a la lista
                 MensajesChat.Add(new ItemMensajeChat { Contenido = respuestaIa, EsUsuario = false });

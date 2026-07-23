@@ -109,7 +109,7 @@
 
                 <StackPanel Grid.Row="1" Margin="0,15,0,0">
                     <Separator Background="#294B73" Margin="0,0,0,10" Height="1"/>
-                    <TextBlock Text="SurtidorADM Versión 1.0.8" Foreground="#8A9BB0" FontSize="11" HorizontalAlignment="Center" FontWeight="SemiBold"/>
+                    <TextBlock Text="SurtidorADM Versión 1.0.9" Foreground="#8A9BB0" FontSize="11" HorizontalAlignment="Center" FontWeight="SemiBold"/>
                     <Button Content="Buscar Actualizaciones" 
                             Click="BtnBuscarActualizaciones_Click"
                             Height="24" Width="145" Margin="0,5,0,0"
